@@ -33,6 +33,7 @@ public function hello(){
 
 function onCreate($city,$trans_agen){
 	$routes = DB::table($city.'_routes')->select('route_id')->get();	
+	$stops_id = 0;
 	foreach($routes as $route){	
 	$query = "SELECT DISTINCT ". $city."_stops.stop_id, ". $city."_stops.stop_name, ". $city."_stops.stop_lat, ". $city."_stops.stop_lon
   	FROM ". $city."_trips
@@ -42,9 +43,31 @@ function onCreate($city,$trans_agen){
   	
   	$stops = DB::select( DB::raw($query), array('var' => $route->route_id,));
   		$i = 0;
+  		
   		foreach($stops as $stop){
    			$i = $i+1;
-   			DB::statement("INSERT INTO ".$city."_".$trans_agen."_data(route,stop_name,stop_pos,stop_lat,stop_lon) values('".$route->route_id."' ,'".$stop->stop_name."' ,'".$i."' ,'".$stop->stop_lat."' ,'".$stop->stop_lon."')"); 		
+   			//DB::statement("INSERT INTO ".$city."_".$trans_agen."_data(route,stop_name,stop_pos,stop_lat,stop_lon) values('".$route->route_id."' ,'".$stop->stop_name."' ,'".$i."' ,'".$stop->stop_lat."' ,'".$stop->stop_lon."')"); 
+   			
+   			
+   			$query = "SELECT stop_id FROM ".$city."_".$trans_agen."_stop WHERE stop_name = :var"; 
+
+  	                $stopid = DB::select( DB::raw($query), array('var' => $stop->stop_name,));
+   			if(sizeof($stopid)!=1){
+   				$stops_id = $stops_id+1;
+   				DB::statement("INSERT INTO ".$city."_".$trans_agen."_route(route,stop_id,stop_pos) values('".$route->route_id."' ,'".$stops_id."' ,'".$i."')"); 
+   				  				  			
+   				DB::statement("INSERT INTO ".$city."_".$trans_agen."_stop(stop_id,stop_name,stop_lat,stop_lon) values('".$stops_id."' ,'".$stop->stop_name."' ,'".$stop->stop_lat."' ,'".$stop->stop_lon."')"); 
+   				
+   				
+   			
+   			}
+   			else{
+   				
+   				//print_r("match".$stopid[0]->stop_id." <br>");
+   				DB::statement("INSERT INTO ".$city."_".$trans_agen."_route(route,stop_id,stop_pos) values('".$route->route_id."' ,'".$stopid[0]->stop_id."' ,'".$i."')"); 
+   				
+   				  						
+   			}		
   		} 
   		
   	}
@@ -56,21 +79,22 @@ function onCreate($city,$trans_agen){
   	DB::statement("drop table ".$city."_calendar");
   	DB::statement("drop table ".$city."_trips");
   	
+  	
 }
 public function speed_load($direc,$city,$trans_agen){
 	set_time_limit(0);
 	$dir = $direc;
 	$files = array_diff(scandir($dir), array('..', '.'));
-	print_r($files);
+	//print_r($files);
 	$lim = count($files)+2;
-	echo '</br>'.$lim ."</br>";
+	//echo '</br>'.$lim ."</br>";
 	DB::statement("INSERT INTO cities(name,transport_corp) values('".$city."','".$trans_agen."')");
 	for($i = 2;$i<$lim;$i++){
 		$tab = substr($files[$i],0,-4);
 		if($tab=="routes"||$tab=="agency"||$tab=="calendar"||$tab=="stops"||$tab=="stop_times"||$tab=="trips"){
 		$table_name = $city.'_'.$tab;
 		$path = $dir.'/'.$files[$i];
-		echo '</br>'.'</br>'.$table_name.'    '.$path.'</br>';
+		//echo '</br>'.'</br>'.$table_name.'    '.$path.'</br>';
 		$raw = file_get_contents($path);
 		$lines1 = explode("\n", $raw);
 		$tableHeaders = $lines1[0];
@@ -89,7 +113,7 @@ public function speed_load($direc,$city,$trans_agen){
 		$field  = substr($field , 0, -1) . ")";
 		
 		$create_table = "create table " .$table_name." ".$field;
-		echo $create_table.'</br>';
+		//echo $create_table.'</br>';
 		DB::statement($create_table);//or die('tables cannot be created.<br>' . mysql_error());
 		$load ="LOAD DATA INFILE '$path' INTO TABLE $table_name
 		FIELDS TERMINATED BY ','
@@ -121,10 +145,24 @@ public function speed_load($direc,$city,$trans_agen){
 	DB::statement($sqlTrips);
 	DB::statement($sanitize_trips);
 	
-	$create  = "create table ".$city.'_'.$trans_agen."_data(route varchar(500), stop_name varchar(500), stop_pos varchar(500), stop_lat varchar(500), stop_lon varchar(500))";
+	//$create  = "DROP TABLE IF EXISTS ".$city.'_'.$trans_agen."_data";
+	//DB::statement($create);
+	//$create  = "create table ".$city.'_'.$trans_agen."_data(route varchar(500), stop_name varchar(500), stop_pos varchar(500), stop_lat varchar(500), stop_lon varchar(500))";
+	//DB::statement($create);
+	$create  = "DROP TABLE IF EXISTS ".$city.'_'.$trans_agen."_route";
 	DB::statement($create);
-	$this->onCreate($city,$trans_agen);
+	$create  = "create table ".$city.'_'.$trans_agen."_route(route varchar(500), stop_id INT, stop_pos INT)";
+	DB::statement($create);
+	$create  = "DROP TABLE IF EXISTS ".$city.'_'.$trans_agen."_stop";
+	DB::statement($create);
+	$create  = "create table ".$city.'_'.$trans_agen."_stop(stop_id INT, stop_name varchar(500), stop_lat varchar(500), stop_lon varchar(500))";
+	DB::statement($create);
 	
+	$stops = "ALTER TABLE ".$city.'_'.$trans_agen."_stop
+	ADD PRIMARY KEY (stop_id,stop_name)";
+	DB::statement($stops);
+	
+	$this->onCreate($city,$trans_agen);
 	
 	$this->rmdir_recursive($direc);
 		
@@ -179,9 +217,12 @@ public function upload_and_extract(){
     		} else {	
     			$message = "There was a problem with the upload. Please try again.";
     		}
-    		echo '</br>'.$message;
+    		//echo '</br>'.$message;
     		$this->speed_load($targetdir,$city,$trans_agen);
     	}
+    	
+    	echo '<script>window.alert("Successfully uploaded the File!");</script>';
+  	return View::make('static_uploadzip');
     	
 }
 

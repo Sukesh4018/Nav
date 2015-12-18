@@ -11,16 +11,13 @@ set_time_limit(0);
   	<a href="add_agen" class="btn btn-info btn-lg btn-block" role="button">Add Agency</a>
 </div>
     <div id="section">
-    <h1>Upload Google Transit Feed Specification Format(GTFS) Zip</h1></br></br>
-    {{ Form::open(array('url'=>'upload_zip', 'files'=>true, 'enctype' => 'multipart/form-data', 'method' => 'POST')) }}
+    <h1><b><i>Enter the name of the City and Transport Agency</i></b></h1></br></br>
+    {{ Form::open(array('url'=>'add_agen', 'method' => 'POST')) }}
     	{{ Form::label('Name of the City') }}
     	{{ Form::text('city') }}</br></br>
     	{{ Form::label('Name of the Transport Agency') }}
-    	{{ Form::text('trans_agen') }}</br></br>
-    	{{ Form::label('Choose a zip file to upload:') }}</br></br>
- 	{{ Form::file('zip_file',['class' =>'btn btn-success']) }}</br></br>
- 	{{ Form::submit('Upload',['class' =>'btn btn-primary']) }}
+    	{{ Form::text('trans_agen') }}</br></br>  	
+ 	{{ Form::submit('Save',['class' =>'btn btn-primary']) }}
     {{ Form::close() }}
      </div>
      @include('down')
-   

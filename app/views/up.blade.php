@@ -49,7 +49,9 @@ p.uppercase {
              src="http://localhost/Nav/public/img/Bus.png">
 </a>
 <div  class="btn-group">
-<p class="uppercase" style="font-size:32; float:left;margin-top: 10px !important;">{{Session::get('editCity')}},{{Session::get('editTrans')}}{{ Form::open(array('url'=>'get_change','method' => 'GET','class'=>'navbar-form navbar-left')) }}
+<p class="uppercase" style="font-size:32; float:left;margin-top: 10px !important;"><?php if(Session::get('editTrans')!=""){
+echo  Session::get('editCity').', '.Session::get('editTrans');
+}?>{{ Form::open(array('url'=>'get_change','method' => 'GET','class'=>'navbar-form navbar-left')) }}
 	{{ Form::submit('Change Agency',['class' =>'btn btn-success btn-block btn-lg']) }}
 {{ Form::close() }}
  

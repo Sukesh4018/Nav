@@ -34,6 +34,11 @@ Route::get('upload_help',  function()
 	return View::make('header')->with('source','mupload');
 });
 
+Route::get('add_agen',  function()
+{
+	return View::make('add_agency')->with('source','mupload');
+});
+
 /*
 Route::get('add_route',  function()
 {
@@ -59,6 +64,7 @@ Route::get('mupload', 'HeadController@manual_upload');
 Route::post('mupload', 'HeadController@manual_upload');
 Route::post('upload_zip', 'BaseController@upload_and_extract');
 Route::post('list_trans', 'HeadController@list_trans');
+Route::post('add_agen', 'HeadController@add_agency');
 
 Route::get('edit_stop',function(){
 	return "To be Updated";

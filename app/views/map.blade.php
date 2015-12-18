@@ -162,6 +162,26 @@ function minimizeText() {
   document.body.style.fontSize = parseFloat(document.body.style.fontSize) - (2 * 0.2) + "em";
 } 
 
+function callback(response, status) {
+    
+  if (status == google.maps.DistanceMatrixStatus.OK) {
+   var origins = response.originAddresses;
+    var destinations = response.destinationAddresses;
+    for (var i = 0; i < origins.length; i++) {
+      var results = response.rows[i].elements;
+      for (var j = 0; j < results.length; j++) {
+        var element = results[j];
+        var distance = element.distance.text;
+        var duration = element.duration.text;
+        var from = origins[i];
+        var to = destinations[j];
+        window.alert(distance+" "+duration);
+      }
+    }
+  }
+
+}
+
 function initialize() {
 var mapOptions = {
     backgroundColor : "FFFFFF",
@@ -170,6 +190,21 @@ var mapOptions = {
     center: new google.maps.LatLng(points[0].stop_lat, points[0].stop_lon)
   };
 var map = new google.maps.Map(document.getElementById('map-canvas'),mapOptions); 
+var trafficLayer = new google.maps.TrafficLayer();
+trafficLayer.setMap(map);
+
+ var service = new google.maps.DistanceMatrixService();
+service.getDistanceMatrix(
+  {
+     origins: [{lat: points[0].stop_lat, lng: points[0].stop_lon}],
+    destinations: [{lat: points[1].stop_lat, lng: points[1].stop_lon}],
+    travelMode: google.maps.TravelMode.DRIVING,
+    drivingOptions: {
+       departureTime: new Date(Date.now()),  // for the time N milliseconds from now.
+        trafficModel: "optimistic"
+    }
+  }, callback);
+
 var routePoints = new Array();
 
 var marker = new Array();

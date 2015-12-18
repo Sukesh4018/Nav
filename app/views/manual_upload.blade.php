@@ -11,7 +11,7 @@ p.uppercase {
 	<a href="upload" class="btn btn-info btn-lg btn-block" role="button"> GTFS Zip</a>
   	<a href="mupload" class="btn btn-info btn-lg btn-block" role="button">Edit Route</a>
   	<a href="add_route" class="btn btn-info btn-lg btn-block" role="button">Add Route</a>
-  	<a href="edit_stop" class="btn btn-info btn-lg btn-block" role="button">Edit Stop</a>
+  	<a href="add_agen" class="btn btn-info btn-lg btn-block" role="button">Add Agency</a>
 
 </div>
 <p  style="font-size:32;margin-left: 50px !important;margin-top: 10px !important;"><b><i>Enter the Route Number you wish to Modify</i></b></p>
@@ -80,11 +80,11 @@ p.uppercase {
 		window.alert(div.innerHTML);
 		//document.getElementById("form").appendChild(newdiv);
 		*/
-		window.alert(newdiv);		
+		//window.alert(newdiv);		
 		count++;
 		
 		document.getElementById('count').value = count; 
-		window.alert(document.getElementById('count').value);
+		//window.alert(document.getElementById('count').value);
 		
 		
 	});

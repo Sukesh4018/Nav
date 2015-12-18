@@ -15,7 +15,7 @@ function header_proc(){
 		$sql = "SELECT transport_corp FROM cities WHERE transport_corp LIKE  :var  ORDER BY transport_corp";
 	}
 	*/
-	$sql = "SELECT * FROM cities WHERE name LIKE  :var  ORDER BY name";
+	$sql = "SELECT distinct * FROM cities WHERE name LIKE  :var  group BY name";
 	$results = DB::select( DB::raw($sql), array('var' => '%'.$search_string.'%',));
 	$data = array($search,$results,$source);
 	return View::make('header_view')->with('data', $data);
@@ -70,6 +70,23 @@ function manual_upload(){
 	
 }
 
+function add_agency(){
+	$inp = Input::all();
+	$city = $inp['city'];
+	$trans = $inp['trans_agen'];
+	DB::table('cities')->insert(['name' => $city, 'transport_corp' => $trans]);
+	//$create  = "create table ".$city.'_'.$trans."_data(route varchar(500), stop_name varchar(500), stop_pos varchar(500), stop_lat varchar(500), stop_lon varchar(500))";
+	//DB::statement($create);
+	$create  = "create table ".$city.'_'.$trans."_stop(stop_id INT, stop_name varchar(500), stop_lat varchar(500), stop_lon varchar(500))";
+	DB::statement($create);
+	$create  = "create table ".$city.'_'.$trans."_route(route varchar(500), stop_id INT, stop_pos varchar(500))";
+	DB::statement($create);
+
+	Session::put('editCity',$city);
+	Session::put('editTrans',$trans);
+	return View::make('add_route')->with('city',$city);
+}
+
 function addroute_help(){
 	$inp = Input::all();
 	$city = Session::get('editCity');
@@ -108,17 +125,23 @@ function edit_helper(){
 	$route = $inp['route'];	
 	$city = Session::get('editCity');
 	$trans = Session::get('editTrans');
-	$table = $city.'_'.$trans.'_data';
+	//$table = $city.'_'.$trans.'_data';
+	
+	$table = $city.'_'.$trans.'_route';
+		
 	$res = DB::table($table)->select('route')->where('route',$route)->distinct()->get();
-
+	
 	if(sizeof($res)==1){
 		
 		$stops = DB::table($table)->where('route',$route)->get();
+		$query = "select * from ".$city.'_'.$trans."_route , ".$city.'_'.$trans."_stop where route = :var and ".$city.'_'.$trans."_route.stop_id = ".$city.'_'.$trans."_stop.stop_id ORDER BY ABS(stop_pos);";
+		$stops = DB::select( DB::raw($query), array('var' => $route,));
 		return View::make('manual_upload')->with('datam',array($stops,$route));
 	}
 	else{
 		
-		$stops = "The route doesn't exists! Do you wish to add it?";
+		$stops = "The route doesn't exists! Do you wish to "
+.'<a href="add_route">add it?</a>';
 		return View::make('manual_upload')->with('no_data',$stops);		
 	}
 	
@@ -173,11 +196,12 @@ function edit_done(){
 	$inp = Input::all();
 	$city = Session::get('editCity');
 	$trans = Session::get('editTrans');
-	$table = $city.'_'.$trans.'_data';
+	//$table = $city.'_'.$trans.'_data';
+	$table = $city.'_'.$trans.'_route';
 	$count = $inp['size'];
 	$route = $inp['route'];
 	$op = $inp['op'];
-	echo $count;
+	//echo $count;
 	
 	if($op=="edit"){
 	   $this->del($table,$route);
@@ -188,7 +212,24 @@ function edit_done(){
 		$t3 = $inp['stop_lat'.$i];
 		$t4 = $inp['stop_lon'.$i];
 		//echo $t1." ".$t2." ".$t3." ".$t4." ";
-		DB::table($table)->insert(array('route' => $route, 'stop_pos' => $t1, 'stop_name' => $t2,'stop_lat' =>$t3,'stop_lon'=>$t4));		
+		//DB::table($table)->insert(array('route' => $route, 'stop_pos' => $t1, 'stop_name' => $t2,'stop_lat' =>$t3,'stop_lon'=>$t4));				
+		$query = "SELECT stop_id FROM ".$city."_".$trans."_stop WHERE stop_name = :var"; 
+  	        $stopid = DB::select( DB::raw($query), array('var' => $t2,));
+  	         	        
+   		if(sizeof($stopid)!=1){
+   			$stops_id = $price = DB::table($city."_".$trans."_stop")->max('stop_id');
+ 			$stops_id = $stops_id+1;
+   			DB::statement("INSERT INTO ".$city."_".$trans."_route(route,stop_id,stop_pos) values('".$route."' ,'".$stops_id."' ,'".$t1."')"); 
+   				  				  			
+   			DB::statement("INSERT INTO ".$city."_".$trans."_stop(stop_id,stop_name,stop_lat,stop_lon) values('".$stops_id."' ,'".$t2."' ,'".$t3."' ,'".$t4."')"); 
+   						
+   		}
+   		else{
+   			DB::statement("INSERT INTO ".$city."_".$trans."_route(route,stop_id,stop_pos) values('".$route."' ,'".$stopid[0]->stop_id."' ,'".$t1."')"); 
+   			DB::statement("REPLACE INTO ".$city."_".$trans."_stop(stop_id,stop_name,stop_lat,stop_lon) values('".$stopid[0]->stop_id."' ,'".$t2."' ,'".$t3."' ,'".$t4."')");
+   				
+   				  						
+   			}
 	}
 	if($op=="edit"){
 		echo '<script>window.alert("Successfully updated the route!");</script>';
@@ -228,7 +269,7 @@ function route_init(){
 	}
 	Session::put('city',$city);
 	$trans = Session::get('trans');
-	$routes = DB::table($city.'_'.$trans.'_data')->select('route')->distinct()->get();
+	$routes = DB::table($city.'_'.$trans.'_route')->select('route')->distinct()->get();
 	$data = array('get',$routes);
 	return View::make('map')->with('data',$data);
 	
@@ -246,11 +287,17 @@ function route_finder(){
   	INNER JOIN ". $city."_stops ON ". $city."_stops.stop_id = ". $city."_stop_times.stop_id
   	WHERE route_id = :var";
   	*/
-  	$query = "select * from ".$city.'_'.$trans."_data where route = :var "; 
+  	
+  	//$query = "select * from ".$city.'_'.$trans."_data where route = :var  ORDER BY ABS(stop_pos);"; 
+
+  	//$stops = DB::select( DB::raw($query), array('var' => $route,));
+  	
+  	$query = "select * from ".$city.'_'.$trans."_route , ".$city.'_'.$trans."_stop where route = :var and ".$city.'_'.$trans."_route.stop_id = ".$city.'_'.$trans."_stop.stop_id ORDER BY ABS(stop_pos);"; 
 
   	$stops = DB::select( DB::raw($query), array('var' => $route,));
+  
   	
-  	$routes = DB::table($city.'_'.$trans.'_data')->select('route')->distinct()->get();
+  	$routes = DB::table($city.'_'.$trans.'_route')->select('route')->distinct()->get();
   	$data = array($stops, $routes,$route);
   	return View::make('map')->with('data',$data);
   	
