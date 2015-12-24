@@ -83,12 +83,14 @@ function onCreate($city,$trans_agen){
 }
 public function speed_load($direc,$city,$trans_agen){
 	set_time_limit(0);
+	$city = strtolower($city);
+	$trans_agen = strtolower($trans_agen);
 	$dir = $direc;
 	$files = array_diff(scandir($dir), array('..', '.'));
 	//print_r($files);
 	$lim = count($files)+2;
 	//echo '</br>'.$lim ."</br>";
-	DB::statement("INSERT INTO cities(name,transport_corp) values('".$city."','".$trans_agen."')");
+	DB::statement("REPLACE INTO cities(name,transport_corp) values('".$city."','".$trans_agen."')");
 	for($i = 2;$i<$lim;$i++){
 		$tab = substr($files[$i],0,-4);
 		if($tab=="routes"||$tab=="agency"||$tab=="calendar"||$tab=="stops"||$tab=="stop_times"||$tab=="trips"){
@@ -168,6 +170,83 @@ public function speed_load($direc,$city,$trans_agen){
 		
 }
 
+
+public function load_file($city,$trans_agen,$targetzip){
+	$city = strtolower($city);
+	$trans_agen = strtolower($trans_agen);
+	$create  = "DROP TABLE IF EXISTS ".$city.'_'.$trans_agen."_route";
+	DB::statement($create);
+	$create  = "create table ".$city.'_'.$trans_agen."_route(route varchar(500), stop_id INT, stop_pos INT)";
+	DB::statement($create);
+	$create  = "DROP TABLE IF EXISTS ".$city.'_'.$trans_agen."_stop";
+	DB::statement($create);
+	$create  = "create table ".$city.'_'.$trans_agen."_stop(stop_id INT, stop_name varchar(500), stop_lat varchar(500), stop_lon varchar(500))";
+	DB::statement($create);
+	
+	$stops = "ALTER TABLE ".$city.'_'.$trans_agen."_stop
+	ADD PRIMARY KEY (stop_id,stop_name)";
+	DB::statement($stops);
+	
+	DB::statement("REPLACE INTO cities(name,transport_corp) values('".$city."','".$trans_agen."')");
+	$myfile = fopen($targetzip, "r") or die("Unable to open file!");
+	$stops_id = 0;
+	while(!feof($myfile)) {
+	
+  	$line = explode(",", fgets($myfile));
+  	if(sizeof($line)>=2){
+  		$query = "SELECT stop_id FROM ".$city."_".$trans_agen."_stop WHERE stop_name = :var"; 
+  	        $stopid = DB::select( DB::raw($query), array('var' => $line[1],));
+  	        $query  = "SELECT max(stop_pos) as pos FROM ".$city."_".$trans_agen."_route WHERE route = :var group by route"; 
+  	        $pos = DB::select( DB::raw($query), array('var' => $line[0],));
+  	        if(sizeof($pos)==0){
+  	        	$pos = 1;
+  	        }
+  	        else{
+  	        	$pos = $pos[0]->pos+1;
+  	        }
+  	        
+  		if(sizeof($line)==2){
+  			if(sizeof($stopid)!=1){
+   				$stops_id = $stops_id+1;
+   				DB::statement("INSERT INTO ".$city."_".$trans_agen."_route(route,stop_id,stop_pos) values('".$line[0]."' ,'".$stops_id."' ,'".$pos."')"); 
+   				  				  			
+   				DB::statement("INSERT INTO ".$city."_".$trans_agen."_stop(stop_id,stop_name,stop_lat,stop_lon) values('".$stops_id."' ,'".$line[1]."' ,'"."Not Available"."' ,'"."Not Available"."')"); 
+   				
+   				
+   			
+   			}
+   			else{
+   				
+   				//print_r("match".$stopid[0]->stop_id." <br>");
+   				DB::statement("INSERT INTO ".$city."_".$trans_agen."_route(route,stop_id,stop_pos) values('".$line[0]."' ,'".$stopid[0]->stop_id."' ,'".$pos."')");  
+   				
+   				  						
+   			}
+  		}
+  		else{
+  			if(sizeof($stopid)!=1){
+   				$stops_id = $stops_id+1;
+   				DB::statement("INSERT INTO ".$city."_".$trans_agen."_route(route,stop_id,stop_pos) values('".$line[0]."' ,'".$stops_id."' ,'".$pos."')"); 
+   				  				  			
+   				DB::statement("INSERT INTO ".$city."_".$trans_agen."_stop(stop_id,stop_name,stop_lat,stop_lon) values('".$stops_id."' ,'".$line[1]."' ,'".$line[2]."' ,'".$line[3]."')");  
+   					
+   			}
+   			else{
+   				
+   				//print_r("match".$stopid[0]->stop_id." <br>");
+   				DB::statement("INSERT INTO ".$city."_".$trans_agen."_route(route,stop_id,stop_pos) values('".$line[0]."' ,'".$stopid[0]->stop_id."' ,'".$pos."')");  
+   				
+   				  						
+   			}
+  		}
+  		
+	}
+	}
+	fclose($myfile);
+	$path = dirname(__FILE__).'/'."upload_file";
+	$this->rmdir_recursive($path);
+	
+}
 public function upload_and_extract(){
 	set_time_limit(0);
 	$file = Input::file('zip_file');
@@ -219,11 +298,64 @@ public function upload_and_extract(){
     		}
     		//echo '</br>'.$message;
     		$this->speed_load($targetdir,$city,$trans_agen);
+    		echo '<script>window.alert("Successfully uploaded the File!");</script>';
+
     	}
     	
-    	echo '<script>window.alert("Successfully uploaded the File!");</script>';
-  	return View::make('static_uploadzip');
+    	  	  return View::make('static_uploadzip');
     	
 }
+
+function file_upload(){
+	$file = Input::file('zip_file');
+	$inp = Input::all();
+	$city = $inp['city'];
+	$trans_agen = $inp['trans_agen'];
+		if($file->getClientOriginalName()) {
+    		$filename = $file->getClientOriginalName();
+    		$type = $file->getClientOriginalExtension();
+    		$name = explode(".", $filename);
+    		
+    		$continue = strtolower($name[1]) == 'csv' ? true : false;
+    		if(!$continue) {
+    			$message = "The file you are trying to upload is not a .zip file. Please try again.";
+    		}
+     
+      /* PHP current path */
+      		$path = dirname(__FILE__).'/';  // absolute path to the directory where zipper.php is in
+      		$filenoext = basename ($filename, '.csv');  // absolute path to the directory where zipper.php is in (lowercase)
+      		$filenoext = basename ($filenoext, '.CSV');  // absolute path to the directory where zipper.php is in (when uppercase)
+      		$targetdir = $path . "upload_file"; // target directory
+      		$targetzip = $targetdir.'/'. $filename; // target zip file
+      /* create directory if not exists', otherwise overwrite */
+      /* target directory is same as filename without extension */
+     
+      		if (is_dir($targetdir))  $this->rmdir_recursive ( $targetdir);
+      		mkdir($targetdir, 0777);
+      /* here it is really happening */
+    		if($file->move($targetdir, $filename)) {
+    			system("chmod -R 777 ".$path);	
+    			$zip = new ZipArchive();
+    			$x = $zip->open($targetzip);  // open the zip file to extract
+    			if ($x === true) {
+    				$zip->extractTo($targetdir); // place in the directory with same name  
+    				$zip->close();
+    				unlink($targetzip);
+    			}
+    			system("chmod -R 777 /var/www/html/Nav/app/");	
+    			$message = "Your .zip file was uploaded and unpacked.";
+    		} else {	
+    			$message = "There was a problem with the upload. Please try again.";
+    		}
+    		//echo '</br>'.$message;
+    		$this->load_file($city,$trans_agen,$targetzip);
+    		echo '<script>window.alert("Successfully uploaded the File!");</script>';
+
+    	}
+    	return View::make('upload_file');
+	
+}
+
+
 
 }

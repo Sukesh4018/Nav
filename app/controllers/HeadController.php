@@ -74,7 +74,10 @@ function add_agency(){
 	$inp = Input::all();
 	$city = $inp['city'];
 	$trans = $inp['trans_agen'];
-	DB::table('cities')->insert(['name' => $city, 'transport_corp' => $trans]);
+	$city = strtolower($city);
+	$trans = strtolower($trans);
+	//DB::table('cities')->insert(['name' => $city, 'transport_corp' => $trans]);
+	DB::statement("REPLACE INTO cities(name,transport_corp) values('".$city."','".$trans."')");
 	//$create  = "create table ".$city.'_'.$trans."_data(route varchar(500), stop_name varchar(500), stop_pos varchar(500), stop_lat varchar(500), stop_lon varchar(500))";
 	//DB::statement($create);
 	$create  = "create table ".$city.'_'.$trans."_stop(stop_id INT, stop_name varchar(500), stop_lat varchar(500), stop_lon varchar(500))";
@@ -187,6 +190,7 @@ function edit_helper(){
 	
 	
 }
+
 
 function del($table,$route){
 	DB::table($table)->where('route', '=', $route)->delete();

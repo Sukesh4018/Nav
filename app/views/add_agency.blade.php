@@ -9,6 +9,7 @@ set_time_limit(0);
   	<a href="mupload" class="btn btn-info btn-lg btn-block" role="button">Edit Route</a>
   	<a href="add_route" class="btn btn-info btn-lg btn-block" role="button">Add Route</a>
   	<a href="add_agen" class="btn btn-info btn-lg btn-block" role="button">Add Agency</a>
+  	<a href="upload_file" class="btn btn-info btn-lg btn-block" role="button">Upload File</a>
 </div>
     <div id="section">
     <h1><b><i>Enter the name of the City and Transport Agency</i></b></h1></br></br>

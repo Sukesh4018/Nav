@@ -19,6 +19,12 @@ Route::get('upload', function()
 {
 	return View::make('static_uploadzip');
 });
+
+Route::get('upload_file', function()
+{
+	return View::make('upload_file');
+});
+
 Route::get('get_search',  function()
 {
 	return View::make('header')->with('source','selection');
@@ -63,6 +69,7 @@ Route::post('add_route', 'HeadController@addroute_help');
 Route::get('mupload', 'HeadController@manual_upload');
 Route::post('mupload', 'HeadController@manual_upload');
 Route::post('upload_zip', 'BaseController@upload_and_extract');
+Route::post('upload_file', 'BaseController@file_upload');
 Route::post('list_trans', 'HeadController@list_trans');
 Route::post('add_agen', 'HeadController@add_agency');
 
