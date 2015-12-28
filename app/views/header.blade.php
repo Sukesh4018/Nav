@@ -1,5 +1,22 @@
+ <?php
+ 	$cities_data = DB::table('cities')->select('name')->distinct()->get();
+ 	$i = 0;
+	foreach($cities_data as $city){
+    		$city_data[$i] = $city;
+   		 $i = $i+1;
+  	}
+ ?>
+ 
  @include('up')
     <title>Search</title>
+<script>
+  $(function() {
+    var availableroute = <?php echo json_encode($city_data)?>;
+    $( "#input_string" ).autocomplete({
+      source: availableroute
+    });
+  });
+</script>
     <div id="nav" class="btn-group"></div>
     {{ Form::open(array('url'=>'header','method' => 'POST')) }}
 	<input type="hidden" name="search" value= "city" /> 
@@ -13,4 +30,5 @@
  	</br></br>{{ Form::submit('Search',['class' =>'btn btn-primary btn-block']) }}
     {{ Form::close() }}
    </div>
+   
 

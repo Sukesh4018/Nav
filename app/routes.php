@@ -56,6 +56,11 @@ Route::get('test',  function()
 	return View::make('search');
 });
 
+Route::post('geocode_data',  function()
+{
+	return "Input";
+});
+
 Route::post('main', 'HeadController@route_finder');
 Route::get('main', 'HeadController@route_init');
 Route::post('header', 'HeadController@header_proc');

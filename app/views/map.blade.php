@@ -114,7 +114,7 @@ p {
 
 {{ Form::open(array('url'=>'main','method' => 'POST','class'=>'navbar-form navbar-right')) }}
 
-  <p style="font-size:24px;display: inline;margin-right:200px;"><nobr><?php if(is_array($data)){if(sizeof($data)==3){echo 'Result for "'.$data[2].'"';}} ?></nobr></p>
+  <p style="font-size:24px;display: inline;margin-right:200px;"><nobr><?php if(is_array($data)){if(sizeof($data)==3){echo 'Result for Route:  "'.$data[2].'"';}} ?></nobr></p>
   {{ Form::label('route', 'Route: ') }}
   <input type="text" id = "route" name="route" style="height:40px;width:400px;">
   {{ Form::submit('Go',['class' =>'btn btn-primary btn-md ']) }}
@@ -182,17 +182,156 @@ function callback(response, status) {
 
 }
 
+var positions = new Array();
+var stopname = new Array();
+var ind = 0;
+
+// Credits : http://acleach.me.uk/gmaps/v3/plotaddresses.htm
+
+  // delay between geocode requests - at the time of writing, 100 miliseconds seems to work well
+    var delay = 100;
+
+
+      // ====== Create map objects ======
+      var infowindow = new google.maps.InfoWindow();
+      var latlng = new google.maps.LatLng(-34.397, 150.644);
+      var mapOptions = {
+        zoom: 8,
+        center: latlng,
+        mapTypeId: google.maps.MapTypeId.ROADMAP
+      }
+      var geo = new google.maps.Geocoder(); 
+      //var map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
+      var bounds = new google.maps.LatLngBounds();
+
+      // ====== Geocoding ======
+      function getAddress(search, next) {
+        geo.geocode({address:search}, function (results,status)
+          { 
+            // If that was successful
+            if (status == google.maps.GeocoderStatus.OK) {
+              // Lets assume that the first marker is the one we want
+              var p = results[0].geometry.location;
+              positions[ind] = p;
+              stopname[ind] = search;
+              ind++;
+              var lat=p.lat();
+              var lng=p.lng();
+              // Output the data
+                //var msg = 'address="' + search + '" lat=' +lat+ ' lng=' +lng+ '(delay='+delay+'ms)<br>';
+                //document.getElementById("map-canvas").innerHTML += msg;
+              // Create a marker
+              //createMarker(search,lat,lng);
+            }
+            // ====== Decode the error status ======
+            else {
+              // === if we were sending the requests to fast, try this one again and increase the delay
+              if (status == google.maps.GeocoderStatus.OVER_QUERY_LIMIT) {
+                nextAddress--;
+                delay++;
+              } else {
+                var reason="Code "+search+" "+status;
+               // alert(reason);
+              //  var msg = 'address="' + search + '" error=' +reason+ '(delay='+delay+'ms)<br>';
+              //  document.getElementById("map-canvas").innerHTML += msg;
+              }   
+            }
+            next();
+          }
+        );
+      }
+
+     // ======= Function to create a marker
+     function createMarker(add,lat,lng) {
+       var contentString = add;
+       var marker = new google.maps.Marker({
+         position: new google.maps.LatLng(lat,lng),
+         map: map,
+         zIndex: Math.round(latlng.lat()*-100000)<<5
+       });
+
+      google.maps.event.addListener(marker, 'click', function() {
+         infowindow.setContent(contentString); 
+         infowindow.open(map,marker);
+       });
+
+       bounds.extend(marker.position);
+
+     }
+
+      // ======= An array of locations that we want to Geocode ========
+      var addresses = new Array();
+     for(var m in points) {
+     	addresses[m] = points[m].stop_name+" Bus Stop, Ahmedabad";
+     }
+    // alert("address length"+addresses.length);
+     
+      // ======= Global variable to remind us what to do next
+      var nextAddress = 0;
+
+      // ======= Function to call the next Geocode operation when the reply comes back
+
+      function theNext() {
+        if (nextAddress < addresses.length) {
+          setTimeout('getAddress("'+addresses[nextAddress]+'",theNext)', delay);
+          nextAddress++;
+        } else {
+          // We're done. Show map bounds
+          map.fitBounds(bounds);
+        }
+      }
+
+      // ======= Call that function for the first time =======
+     	theNext();
+  
+// END
+function sleep(milliseconds) {
+  var start = new Date().getTime();
+  for (var i = 0; i < 1e7; i++) {
+    if ((new Date().getTime() - start) > milliseconds){
+      break;
+    }
+  }
+}
+
+
+
 function initialize() {
 var mapOptions = {
     backgroundColor : "FFFFFF",
     zoom: 11,
     mapTypeId: google.maps.MapTypeId.ROADMAP,
-    center: new google.maps.LatLng(points[0].stop_lat, points[0].stop_lon)
+   // center: new google.maps.LatLng(points[0].stop_lat, points[0].stop_lon)
   };
 var map = new google.maps.Map(document.getElementById('map-canvas'),mapOptions); 
 var trafficLayer = new google.maps.TrafficLayer();
 trafficLayer.setMap(map);
 
+//alert(positions.length+" "+stopname.length+" "+points.length+" "+ind);
+
+//setTimeout(alert(positions.length+"==="+positions),positions.length*200);
+if(positions.length==points.length){
+var stringy = JSON.stringify(positions);
+alert(stringy);
+    alert("In the thing");
+    var form = document.createElement("post");
+    alert("created");
+    form.setAttribute("method", "post");
+    form.setAttribute("action", 'geocode_data');
+    alert("set actions");
+    var hiddenField = document.createElement("input");
+    hiddenField.setAttribute("type", "hidden");
+    hiddenField.setAttribute("name", "data");
+    hiddenField.setAttribute("value", stringy);
+    alert("attributes set");
+    form.appendChild(hiddenField);
+    document.body.appendChild(form);
+    alert("submitting");
+    form.submit();
+}
+
+
+/*
  var service = new google.maps.DistanceMatrixService();
 service.getDistanceMatrix(
   {
@@ -204,9 +343,10 @@ service.getDistanceMatrix(
         trafficModel: "optimistic"
     }
   }, callback);
+*/
 
+/*
 var routePoints = new Array();
-
 var marker = new Array();
 for(var m in points) {
   var myLatlng = new google.maps.LatLng(points[m].stop_lat,points[m].stop_lon);
@@ -222,6 +362,9 @@ for(var m in points) {
   google.maps.event.addListener(marker, "click", function () {name.setContent(data); name.open(map, this); });
   })(marker[m],data);  
 }
+
+*/
+
 
 /*
 for(var i=0;i<routePoints.length-1;i++){

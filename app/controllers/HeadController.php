@@ -256,6 +256,7 @@ function session_init(){
 	return $this->route_init();
 }
 function route_init(){
+	
 	$name = Session::get('selec');
 	$type = Session::get('type');	
 	if($type==""){
@@ -298,9 +299,7 @@ function route_finder(){
   	
   	$query = "select * from ".$city.'_'.$trans."_route , ".$city.'_'.$trans."_stop where route = :var and ".$city.'_'.$trans."_route.stop_id = ".$city.'_'.$trans."_stop.stop_id ORDER BY ABS(stop_pos);"; 
 
-  	$stops = DB::select( DB::raw($query), array('var' => $route,));
-  
-  	
+  	$stops = DB::select( DB::raw($query), array('var' => $route,));	
   	$routes = DB::table($city.'_'.$trans.'_route')->select('route')->distinct()->get();
   	$data = array($stops, $routes,$route);
   	return View::make('map')->with('data',$data);

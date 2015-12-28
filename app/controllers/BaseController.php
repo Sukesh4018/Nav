@@ -171,6 +171,42 @@ public function speed_load($direc,$city,$trans_agen){
 }
 
 
+public function load_file1($city,$trans_agen,$filename){
+	$city = strtolower($city);
+	$trans_agen = strtolower($trans_agen);
+	$create  = "DROP TABLE IF EXISTS ".$city.'_'.$trans_agen."_route";
+	DB::statement($create);
+	$create  = "create table ".$city.'_'.$trans_agen."_route(route varchar(500), stop_id INT, stop_pos INT)";
+	DB::statement($create);
+	$create  = "DROP TABLE IF EXISTS ".$city.'_'.$trans_agen."_stop";
+	DB::statement($create);
+	$create  = "create table ".$city.'_'.$trans_agen."_stop(stop_id INT, stop_name varchar(500), stop_lat varchar(500), stop_lon varchar(500))";
+	DB::statement($create);
+	
+	$stops = "ALTER TABLE ".$city.'_'.$trans_agen."_stop
+	ADD PRIMARY KEY (stop_id,stop_name)";
+	DB::statement($stops);
+	DB::statement("REPLACE INTO cities(name,transport_corp) values('".$city."','".$trans_agen."')");
+	$path = public_path()."/";
+	system("cd ".$path);
+	system("java Conv ".$filename." ".$path);
+	$stop = public_path().'/'.$filename."_s.csv";
+	$route = public_path().'/'.$filename."_r.csv";
+	$stop_table = $city.'_'.$trans_agen."_stop";
+	$route_table = $city.'_'.$trans_agen."_route";
+	$load ="LOAD DATA INFILE '$stop' INTO TABLE $stop_table
+		FIELDS TERMINATED BY ','
+		LINES TERMINATED BY '\\n'";
+	DB::unprepared($load)or die('  Error Loading Data File.<br>' . mysql_error());
+	$load ="LOAD DATA INFILE '$route' INTO TABLE $route_table
+		FIELDS TERMINATED BY ','
+		LINES TERMINATED BY '\\n'";
+	DB::unprepared($load)or die('  Error Loading Data File.<br>' . mysql_error());
+	system("rm ".$stop);
+	system("rm ".$route);
+	system("rm ".public_path().'/'.$filename.".csv");
+}
+
 public function load_file($city,$trans_agen,$targetzip){
 	$city = strtolower($city);
 	$trans_agen = strtolower($trans_agen);
@@ -189,10 +225,13 @@ public function load_file($city,$trans_agen,$targetzip){
 	
 	DB::statement("REPLACE INTO cities(name,transport_corp) values('".$city."','".$trans_agen."')");
 	$myfile = fopen($targetzip, "r") or die("Unable to open file!");
+	$stop = fopen(dirname(__FILE__).'/'."temp_stop.csv", "w") or die("Unable to open file!");
+	$route= fopen(dirname(__FILE__).'/'."temp_route.csv", "w") or die("Unable to open file!");
 	$stops_id = 0;
 	while(!feof($myfile)) {
 	
   	$line = explode(",", fgets($myfile));
+  	
   	if(sizeof($line)>=2){
   		$query = "SELECT stop_id FROM ".$city."_".$trans_agen."_stop WHERE stop_name = :var"; 
   	        $stopid = DB::select( DB::raw($query), array('var' => $line[1],));
@@ -206,11 +245,19 @@ public function load_file($city,$trans_agen,$targetzip){
   	        }
   	        
   		if(sizeof($line)==2){
+  		$line[1] = str_replace(array("\n", "\r"), '', $line[1]);
   			if(sizeof($stopid)!=1){
    				$stops_id = $stops_id+1;
-   				DB::statement("INSERT INTO ".$city."_".$trans_agen."_route(route,stop_id,stop_pos) values('".$line[0]."' ,'".$stops_id."' ,'".$pos."')"); 
+   				
+   				$dat0 = $line[0]. ",".$stops_id.','.$pos;
+   				$dat1 = $stops_id.','.$line[1].','."Not Available".','."Not Available";
+   				fwrite($route, $dat0);
+   				fwrite($route,"\n");
+   				fwrite($stop, $dat1);
+   				fwrite($stop,"\n");
+   				//DB::statement("INSERT INTO ".$city."_".$trans_agen."_route(route,stop_id,stop_pos) values('".$line[0]."' ,'".$stops_id."' ,'".$pos."')"); 
    				  				  			
-   				DB::statement("INSERT INTO ".$city."_".$trans_agen."_stop(stop_id,stop_name,stop_lat,stop_lon) values('".$stops_id."' ,'".$line[1]."' ,'"."Not Available"."' ,'"."Not Available"."')"); 
+   				//DB::statement("INSERT INTO ".$city."_".$trans_agen."_stop(stop_id,stop_name,stop_lat,stop_lon) values('".$stops_id."' ,'".$line[1]."' ,'"."Not Available"."' ,'"."Not Available"."')"); 
    				
    				
    			
@@ -218,32 +265,57 @@ public function load_file($city,$trans_agen,$targetzip){
    			else{
    				
    				//print_r("match".$stopid[0]->stop_id." <br>");
-   				DB::statement("INSERT INTO ".$city."_".$trans_agen."_route(route,stop_id,stop_pos) values('".$line[0]."' ,'".$stopid[0]->stop_id."' ,'".$pos."')");  
+   				$dat0 = $line[0].','.$stopid[0]->stop_id.','.$pos;
+   				fwrite($route, $dat0);
+   				fwrite($route,"\n");
+   				
+   				//DB::statement("INSERT INTO ".$city."_".$trans_agen."_route(route,stop_id,stop_pos) values('".$line[0]."' ,'".$stopid[0]->stop_id."' ,'".$pos."')");  
    				
    				  						
    			}
   		}
   		else{
+  		if(sizeof($line)==4){
+  		$line[1] = str_replace(array("\n", "\r"), '', $line[1]);
+  		$line[3] = str_replace(array("\n", "\r"), '', $line[3]);
   			if(sizeof($stopid)!=1){
    				$stops_id = $stops_id+1;
-   				DB::statement("INSERT INTO ".$city."_".$trans_agen."_route(route,stop_id,stop_pos) values('".$line[0]."' ,'".$stops_id."' ,'".$pos."')"); 
+   				
+   				$dat0 = $line[0]. ",".$stops_id.','.$pos;
+   				$dat1 = $stops_id.','.$line[1].','.$line[2].','.$line[3];
+   				fwrite($route, $dat0);
+   				fwrite($route,"\n");
+   				fwrite($stop, $dat1);
+   				fwrite($stop,"\n");
+   				
+   				//DB::statement("INSERT INTO ".$city."_".$trans_agen."_route(route,stop_id,stop_pos) values('".$line[0]."' ,'".$stops_id."' ,'".$pos."')"); 
    				  				  			
-   				DB::statement("INSERT INTO ".$city."_".$trans_agen."_stop(stop_id,stop_name,stop_lat,stop_lon) values('".$stops_id."' ,'".$line[1]."' ,'".$line[2]."' ,'".$line[3]."')");  
+   				//DB::statement("INSERT INTO ".$city."_".$trans_agen."_stop(stop_id,stop_name,stop_lat,stop_lon) values('".$stops_id."' ,'".$line[1]."' ,'".$line[2]."' ,'".$line[3]."')");  
    					
    			}
    			else{
    				
    				//print_r("match".$stopid[0]->stop_id." <br>");
-   				DB::statement("INSERT INTO ".$city."_".$trans_agen."_route(route,stop_id,stop_pos) values('".$line[0]."' ,'".$stopid[0]->stop_id."' ,'".$pos."')");  
+   				$dat0 = $line[0].','.$stopid[0]->stop_id.','.$pos;
+   				fwrite($route, $dat0);
+   				fwrite($route,"\n");
+   				//DB::statement("INSERT INTO ".$city."_".$trans_agen."_route(route,stop_id,stop_pos) values('".$line[0]."' ,'".$stopid[0]->stop_id."' ,'".$pos."')");  
    				
    				  						
    			}
+   		}
   		}
   		
 	}
 	}
+	fclose($route);
+	fclose($stop);
 	fclose($myfile);
 	$path = dirname(__FILE__).'/'."upload_file";
+	$path1 = dirname(__FILE__).'/'."temp_stop.csv";
+	$path2 = dirname(__FILE__).'/'."temp_route.csv";
+	//$this->rmdir_recursive($path1);
+	//$this->rmdir_recursive($path2);
 	$this->rmdir_recursive($path);
 	
 }
@@ -322,16 +394,16 @@ function file_upload(){
     		}
      
       /* PHP current path */
-      		$path = dirname(__FILE__).'/';  // absolute path to the directory where zipper.php is in
+      		$path = public_path().'/';  // absolute path to the directory where zipper.php is in
       		$filenoext = basename ($filename, '.csv');  // absolute path to the directory where zipper.php is in (lowercase)
       		$filenoext = basename ($filenoext, '.CSV');  // absolute path to the directory where zipper.php is in (when uppercase)
-      		$targetdir = $path . "upload_file"; // target directory
+      		$targetdir = $path ; // target directory
       		$targetzip = $targetdir.'/'. $filename; // target zip file
       /* create directory if not exists', otherwise overwrite */
       /* target directory is same as filename without extension */
      
-      		if (is_dir($targetdir))  $this->rmdir_recursive ( $targetdir);
-      		mkdir($targetdir, 0777);
+      		//if (is_dir($targetdir))  $this->rmdir_recursive ( $targetdir);
+      		//mkdir($targetdir, 0777);
       /* here it is really happening */
     		if($file->move($targetdir, $filename)) {
     			system("chmod -R 777 ".$path);	
@@ -348,7 +420,7 @@ function file_upload(){
     			$message = "There was a problem with the upload. Please try again.";
     		}
     		//echo '</br>'.$message;
-    		$this->load_file($city,$trans_agen,$targetzip);
+    		$this->load_file1($city,$trans_agen,$name[0]);
     		echo '<script>window.alert("Successfully uploaded the File!");</script>';
 
     	}
