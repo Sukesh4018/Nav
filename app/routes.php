@@ -56,9 +56,31 @@ Route::get('test',  function()
 	return View::make('search');
 });
 
+/*
 Route::post('geocode_data',  function()
 {
-	return "Input";
+	$inp = Input::all();
+	$dat = $inp['dat'];
+	$city = $inp['city'];
+	$trans = $inp['trans'];
+	$arr = json_decode($dat);
+	$stops = json_decode($inp['stops']);
+	$table = $city."_".$trans."_stop";
+	for($i=0;$i<sizeof($arr); $i++){
+		$query = "select * from ".$table." where stop_name = :var";
+		$id = DB::select( DB::raw($query), array('var' => $stops[$i],));	
+		DB::statement("REPLACE INTO $table(stop_id,stop_name,stop_lat,stop_lon) values('".$id[0]->stop_id."','".$stops[$i]."','".$arr[$i]->lat."','".$arr[$i]->lng."')");
+	}
+	$rep = "success ".sizeof($arr);
+	return $rep;
+});
+*/
+Route::post('geocode_data', 'HeadController@cache_geocode');
+
+Route::get('geocode_data',  function()
+{
+	$inp = Input::all();
+	return $inp;
 });
 
 Route::post('main', 'HeadController@route_finder');
@@ -76,6 +98,7 @@ Route::post('mupload', 'HeadController@manual_upload');
 Route::post('upload_zip', 'BaseController@upload_and_extract');
 Route::post('upload_file', 'BaseController@file_upload');
 Route::post('list_trans', 'HeadController@list_trans');
+Route::get('list_trans', 'HeadController@route_init');
 Route::post('add_agen', 'HeadController@add_agency');
 
 Route::get('edit_stop',function(){

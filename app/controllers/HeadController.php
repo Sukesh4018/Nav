@@ -21,23 +21,6 @@ function header_proc(){
 	return View::make('header_view')->with('data', $data);
 }
 
-function list_trans(){
-	$inp = Input::all();
-	$source = $inp['source'];
-	$search_string = $inp['selec'];
-	$sql = "SELECT transport_corp FROM cities WHERE name =  :var  ORDER BY name";
-	if($source=='selection'){
-		Session::put('city',$search_string);
-	}
-	else{
-		Session::put('editCity',$search_string);
-	}
-	
-	$results = DB::select( DB::raw($sql), array('var' => $search_string,));
-	$data = array($results,$source,$search_string);
-	return View::make('list_corp')->with('data', $data);	
-}
-
 
 function manual_upload(){
 	$inp = Input::all();
@@ -247,6 +230,35 @@ function edit_done(){
 	
 }
 
+function list_trans(){
+	$inp = Input::all();
+	$source = $inp['source'];
+	//$search_string = $inp['selec'];
+	$search_string = $inp['input_string'];
+	$sql = "SELECT transport_corp FROM cities WHERE name =  :var  ORDER BY name";
+	if($source=='selection'){
+		Session::put('city',$search_string);
+	}
+	else{
+		Session::put('editCity',$search_string);
+	}
+	
+	$results = DB::select( DB::raw($sql), array('var' => $search_string,));
+	if(sizeof($results)==1 && $source=='selection'){
+		Session::put('trans',$results[0]->transport_corp);
+
+		$city = Session::get('city');
+		$trans = Session::get('trans');
+		$routes = DB::table($city.'_'.$trans.'_route')->select('route')->distinct()->get();
+		$data = array('get',$routes);
+		return View::make('map')->with('data',$data);
+	}
+	else{
+		$data = array($results,$source,$search_string);
+		return View::make('list_corp')->with('data', $data);	
+	}
+}
+
 function session_init(){
 	$inp = Input::all();
 	$name = $inp['selec'];
@@ -258,11 +270,18 @@ function session_init(){
 function route_init(){
 	
 	$name = Session::get('selec');
-	$type = Session::get('type');	
-	if($type==""){
+	if($name != ""){
+		Session::put('trans',$name);
+	}
+	$type = Session::get('type');
+	$trans = Session::get('trans');	
+	$city = Session::get('city');
+	
+	if($trans==""){
 		echo '<script>window.alert("Select a City or Agency!");</script>';
 		return View::make('header')->with('source','selection');
 	}
+	/*
 	if($type=='name'){
 		$city = $name;
 	}
@@ -272,8 +291,9 @@ function route_init(){
 		$city = $result[0]->name;
 		Session::put('trans',$name);
 	}
-	Session::put('city',$city);
-	$trans = Session::get('trans');
+	*/
+	//Session::put('city',$city);
+	
 	$routes = DB::table($city.'_'.$trans.'_route')->select('route')->distinct()->get();
 	$data = array('get',$routes);
 	return View::make('map')->with('data',$data);
@@ -306,6 +326,23 @@ function route_finder(){
   	
 }
 
+
+function cache_geocode(){
+	$inp = Input::all();
+	$dat = $inp['dat'];
+	$city = $inp['city'];
+	$trans = $inp['trans'];
+	$arr = json_decode($dat);
+	$stops = json_decode($inp['stops']);
+	$table = $city."_".$trans."_stop";
+	for($i=0;$i<sizeof($arr); $i++){
+		$query = "select * from ".$table." where stop_name = :var";
+		$id = DB::select( DB::raw($query), array('var' => $stops[$i],));	
+		DB::statement("REPLACE INTO $table(stop_id,stop_name,stop_lat,stop_lon) values('".$id[0]->stop_id."','".$stops[$i]."','".$arr[$i]->lat."','".$arr[$i]->lng."')");
+	}
+	$rep = "success ".sizeof($arr);
+	return $rep;
+}
 
 
 }

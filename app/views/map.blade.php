@@ -2,7 +2,9 @@
 if(is_array($data)){
 	$stops = $data[0];
 	$routes = $data[1];
-	
+	$stops_data = array();
+	$city = Session::get('city');
+	$trans = Session::get('trans');
 	if($stops != 'get'){
 	$i = 0;
 	foreach($stops as $stop){
@@ -138,14 +140,23 @@ p {
 </div>
 
 <script>
-var points = <?php if($data[0]!='get'){echo json_encode($stops_data);}?>;  
-
-$('#stops').on('click', function (e) {
+var points = <?php if($data[0]!='get'){if(isset($stops_data)){echo json_encode($stops_data);}}?>;  
+var city = <?php echo json_encode($city); ?>;
+var trans = <?php echo json_encode($trans); ?>;
+if(points.length==0){
+	document.getElementById("map-canvas").innerHTML = "<h1><i>No Such route Exists....</i></h1>";
+}
+else{
 var disp = "";
 for(var temp =0; temp<points.length;temp++){
  disp = disp+points[temp].stop_pos+"  "+points[temp].stop_name+"</br>";
 
 }
+document.getElementById("map-canvas").style.overflow = "auto";
+document.getElementById("map-canvas").innerHTML = disp;
+}
+$('#stops').on('click', function (e) {
+
 document.getElementById("map-canvas").style.overflow = "auto";
 document.getElementById("map-canvas").innerHTML = disp;
 });
@@ -183,8 +194,12 @@ function callback(response, status) {
 }
 
 var positions = new Array();
+var latit = new Array();
+var longit = new Array();
 var stopname = new Array();
 var ind = 0;
+
+
 
 // Credits : http://acleach.me.uk/gmaps/v3/plotaddresses.htm
 
@@ -193,13 +208,14 @@ var ind = 0;
 
 
       // ====== Create map objects ======
-      var infowindow = new google.maps.InfoWindow();
-      var latlng = new google.maps.LatLng(-34.397, 150.644);
-      var mapOptions = {
+      //var infowindow = new google.maps.InfoWindow();
+      //var latlng = new google.maps.LatLng(-34.397, 150.644);
+      /*var mapOptions = {
         zoom: 8,
         center: latlng,
         mapTypeId: google.maps.MapTypeId.ROADMAP
       }
+      */
       var geo = new google.maps.Geocoder(); 
       //var map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
       var bounds = new google.maps.LatLngBounds();
@@ -213,10 +229,12 @@ var ind = 0;
               // Lets assume that the first marker is the one we want
               var p = results[0].geometry.location;
               positions[ind] = p;
-              stopname[ind] = search;
-              ind++;
+              stopname[ind] = search;   
               var lat=p.lat();
               var lng=p.lng();
+              latit[ind] = lat;
+              longit[ind] = lng;
+              ind++;
               // Output the data
                 //var msg = 'address="' + search + '" lat=' +lat+ ' lng=' +lng+ '(delay='+delay+'ms)<br>';
                 //document.getElementById("map-canvas").innerHTML += msg;
@@ -241,6 +259,7 @@ var ind = 0;
         );
       }
 
+	/*
      // ======= Function to create a marker
      function createMarker(add,lat,lng) {
        var contentString = add;
@@ -258,12 +277,19 @@ var ind = 0;
        bounds.extend(marker.position);
 
      }
-
+	*/
       // ======= An array of locations that we want to Geocode ========
-      var addresses = new Array();
+     var addresses = new Array();
+     var names  = new Array();
+     var count = 0;
      for(var m in points) {
-     	addresses[m] = points[m].stop_name+" Bus Stop, Ahmedabad";
+     	if(points[m].stop_lat=="-"){
+     		addresses[count] = points[m].stop_name+" Bus Stop, "+city+", India";
+     		names[count] = points[m].stop_name;
+     		count++;
+     	}
      }
+     var req_size = count;
     // alert("address length"+addresses.length);
      
       // ======= Global variable to remind us what to do next
@@ -277,7 +303,7 @@ var ind = 0;
           nextAddress++;
         } else {
           // We're done. Show map bounds
-          map.fitBounds(bounds);
+          //map.fitBounds(bounds);
         }
       }
 
@@ -294,62 +320,41 @@ function sleep(milliseconds) {
   }
 }
 
-
+ var dislat = new Array();
+ var dislon = new Array();
 
 function initialize() {
+if(positions.length==req_size){
+//if(req_size>0){alert(names[req_size-1]+positions[req_size-1])};
+var stringy = JSON.stringify(positions);
+var stop_name = JSON.stringify(stopname);
+   	for(k in points){
+   		if(points[k].stop_lat=="-"){
+   			dislat[k] = latit[k];
+   			dislon[k] = longit[k];
+   		}
+   		else{
+			dislat[k] = points[k].stop_lat;
+   			dislon[k] = points[k].stop_lon;   		
+   		}
+   		//names[k]  = points[k].stop_name;
+   	}  	
+   
+
+var stops_name = JSON.stringify(names);
 var mapOptions = {
     backgroundColor : "FFFFFF",
     zoom: 11,
     mapTypeId: google.maps.MapTypeId.ROADMAP,
-   // center: new google.maps.LatLng(points[0].stop_lat, points[0].stop_lon)
+    center: new google.maps.LatLng(dislat[0], dislon[0])
   };
 var map = new google.maps.Map(document.getElementById('map-canvas'),mapOptions); 
 var trafficLayer = new google.maps.TrafficLayer();
 trafficLayer.setMap(map);
-
-//alert(positions.length+" "+stopname.length+" "+points.length+" "+ind);
-
-//setTimeout(alert(positions.length+"==="+positions),positions.length*200);
-if(positions.length==points.length){
-var stringy = JSON.stringify(positions);
-alert(stringy);
-    alert("In the thing");
-    var form = document.createElement("post");
-    alert("created");
-    form.setAttribute("method", "post");
-    form.setAttribute("action", 'geocode_data');
-    alert("set actions");
-    var hiddenField = document.createElement("input");
-    hiddenField.setAttribute("type", "hidden");
-    hiddenField.setAttribute("name", "data");
-    hiddenField.setAttribute("value", stringy);
-    alert("attributes set");
-    form.appendChild(hiddenField);
-    document.body.appendChild(form);
-    alert("submitting");
-    form.submit();
-}
-
-
-/*
- var service = new google.maps.DistanceMatrixService();
-service.getDistanceMatrix(
-  {
-     origins: [{lat: points[0].stop_lat, lng: points[0].stop_lon}],
-    destinations: [{lat: points[1].stop_lat, lng: points[1].stop_lon}],
-    travelMode: google.maps.TravelMode.DRIVING,
-    drivingOptions: {
-       departureTime: new Date(Date.now()),  // for the time N milliseconds from now.
-        trafficModel: "optimistic"
-    }
-  }, callback);
-*/
-
-/*
 var routePoints = new Array();
 var marker = new Array();
 for(var m in points) {
-  var myLatlng = new google.maps.LatLng(points[m].stop_lat,points[m].stop_lon);
+  var myLatlng = new google.maps.LatLng(dislat[m],dislon[m]);
   routePoints[m] = myLatlng;
   marker[m] = new google.maps.Marker({
     position: myLatlng,
@@ -363,7 +368,58 @@ for(var m in points) {
   })(marker[m],data);  
 }
 
+
+//alert(stringy);
+alert(positions.length);
+if(positions.length>0){
+var url = "<?php echo Request::root(); ?>/geocode_data";
+request = $.ajax({
+        url: url,
+        method:'post',
+        cache:false,
+        //dataType:'json',
+        data: {"city":city,"trans":trans,"stops":stops_name,"dat":stringy},
+        success:function(data){
+          //alert('success');
+          console.log('sucess');
+        },
+        error:function(xhr,status,error){
+        	alert(error);
+        	 console.log('error');
+            //errors here
+        }
+    });
+    request.done(function (res, textStatus, jqXHR){
+        if (res.status = "ok"){     
+        //alert(res);
+       }
+   });
+   
+  }
+   
+   /*
+ var service = new google.maps.DistanceMatrixService();
+service.getDistanceMatrix(
+  {
+     origins: [{lat: points[0].stop_lat, lng: points[0].stop_lon}],
+    destinations: [{lat: points[1].stop_lat, lng: points[1].stop_lon}],
+    travelMode: google.maps.TravelMode.DRIVING,
+    drivingOptions: {
+       departureTime: new Date(Date.now()),  // for the time N milliseconds from now.
+        trafficModel: "optimistic"
+    }
+  }, callback);
 */
+
+
+
+
+
+
+}
+
+
+
 
 
 /*

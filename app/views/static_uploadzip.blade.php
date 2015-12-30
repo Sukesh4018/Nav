@@ -12,7 +12,7 @@ set_time_limit(0);
   	<a href="upload_file" class="btn btn-info btn-lg btn-block" role="button">Upload File</a>
 </div>
     <div id="section">
-    <h1>Upload Google Transit Feed Specification Format(GTFS) Zip</h1></br></br>
+    <h1><b><i>Upload Google Transit Feed Specification Format(GTFS) Zip</i></b></h1></br></br>
     {{ Form::open(array('url'=>'upload_zip', 'files'=>true, 'enctype' => 'multipart/form-data', 'method' => 'POST')) }}
     	{{ Form::label('Name of the City') }}
     	{{ Form::text('city') }}</br></br>

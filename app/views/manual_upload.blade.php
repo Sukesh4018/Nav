@@ -1,4 +1,13 @@
-
+ <?php
+ 	$city = Session::get("editCity");
+ 	$trans = Session::get("editTrans");
+ 	$cities_data = DB::table($city.'_'.$trans.'_route')->select('route')->distinct()->get();;
+ 	$i = 0;
+	foreach($cities_data as $city){
+    		$city_data[$i] = $city->route;
+   		 $i = $i+1;
+  	}
+ ?>
  @include('up')
     <title>Edit Route</title>
 <style>
@@ -6,12 +15,23 @@ p.uppercase {
     text-transform: uppercase;
 }
 </style>
+
+<script>
+  $(function() {
+    var availableroute = <?php echo json_encode($city_data)?>;
+    //alert(availableroute );
+    $( "#search" ).autocomplete({
+      source: availableroute
+    });
+  });
+</script>
 <div id="nav" class="btn-group">
 
 	<a href="upload" class="btn btn-info btn-lg btn-block" role="button"> GTFS Zip</a>
   	<a href="mupload" class="btn btn-info btn-lg btn-block" role="button">Edit Route</a>
   	<a href="add_route" class="btn btn-info btn-lg btn-block" role="button">Add Route</a>
   	<a href="add_agen" class="btn btn-info btn-lg btn-block" role="button">Add Agency</a>
+  	<a href="upload_file" class="btn btn-info btn-lg btn-block" role="button">Upload File</a>
 
 </div>
 <p  style="font-size:32;margin-left: 50px !important;margin-top: 10px !important;"><b><i>Enter the Route Number you wish to Modify</i></b></p>
@@ -20,7 +40,7 @@ p.uppercase {
 	 {{ Form::open(array('url'=>'edit_help','method' => 'POST')) }}
 	 {{ Form::hidden('handle', 'insert') }}
 	 {{ Form::label('routeNo', 'Route Number: ') }}
-  	  <input type="text" name="route" required style="height:40px;width:400px;">
+  	  <input type="text" id="search" name="route" required style="height:40px;width:400px;">
   	 
 	 {{ Form::submit('Get',['class' =>'btn btn-primary btn-md']) }}
     	 {{ Form::close() }}
