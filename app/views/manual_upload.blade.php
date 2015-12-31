@@ -57,7 +57,7 @@ p.uppercase {
 	
 	echo Form::hidden('route', $route) ;
 	echo Form::hidden('op', 'edit') ;
-	
+	echo Form::hidden('proc', "add") ;
 	foreach($data as $stop){	
 		echo 
 		'<tr><td>'. Form::text('stop_pos'.$i,$stop->stop_pos).

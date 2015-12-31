@@ -116,7 +116,7 @@ p {
 
 {{ Form::open(array('url'=>'main','method' => 'POST','class'=>'navbar-form navbar-right')) }}
 
-  <p style="font-size:24px;display: inline;margin-right:200px;"><nobr><?php if(is_array($data)){if(sizeof($data)==3){echo 'Result for Route:  "'.$data[2].'"';}} ?></nobr></p>
+  <p style="font-size:24px;display: inline;margin-right:200px;"><nobr><?php if(is_array($data)){if(sizeof($data)==3){Session::put('route',$data[2]);echo 'Result for Route:  "'.$data[2].'"';}} ?></nobr></p>
   {{ Form::label('route', 'Route: ') }}
   <input type="text" id = "route" name="route" style="height:40px;width:400px;">
   {{ Form::submit('Go',['class' =>'btn btn-primary btn-md ']) }}
@@ -132,7 +132,13 @@ p {
 
 <div id="nav" class="btn-group">
 	<button id = "stops" type="button" class="btn btn-info btn-lg btn-block" >Stops</button><br><br>
-  	<button id = "map" type="button" class="btn btn-info btn-lg btn-block" >Map</button><br>
+  	<button id = "map" type="button" class="btn btn-info btn-lg btn-block" >Map</button><br><br>
+  	{{ Form::open(array('url'=>'edit_this_route','method' => 'GET')) }}
+		{{ Form::submit('Edit Route',['class' =>'btn btn-info btn-block btn-lg ']) }}
+	{{ Form::close() }}
+  	{{ Form::open(array('url'=>'download_route','method' => 'GET')) }}
+		{{ Form::submit('Download',['class' =>'btn btn-info btn-block btn-lg ']) }}
+	{{ Form::close() }}
 </div>
 
 <div class="container-fluid" align="left" style="width:999px; height:540px;">
@@ -339,8 +345,6 @@ var stop_name = JSON.stringify(stopname);
    		}
    		//names[k]  = points[k].stop_name;
    	}  	
-   
-
 var stops_name = JSON.stringify(names);
 var mapOptions = {
     backgroundColor : "FFFFFF",
@@ -370,7 +374,7 @@ for(var m in points) {
 
 
 //alert(stringy);
-alert(positions.length);
+//alert(positions.length);
 if(positions.length>0){
 var url = "<?php echo Request::root(); ?>/geocode_data";
 request = $.ajax({

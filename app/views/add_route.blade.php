@@ -1,5 +1,14 @@
 <?php
 set_time_limit(0);
+ 	$city = Session::get("editCity");
+ 	$trans = Session::get("editTrans");
+ 	$cities_data = DB::table($city.'_'.$trans.'_route')->select('route')->distinct()->get();;
+ 	$i = 0;
+	foreach($cities_data as $city){
+    		$city_data[$i] = $city->route;
+   		 $i = $i+1;
+  	}
+
 ?>
  @include('up')
     <title>Add Route</title>
@@ -19,13 +28,13 @@ p.uppercase {
 	
 	
 <p  style="font-size:32;margin-left: 50px !important;margin-top: 10px !important;"><b><i>Enter the Route Number you wish to Add</i></b></p>
-	
-    <div id="section">
+	<p  style="font-size:24;margin-left: 50px !important;margin-top: 10px !important;"><b>If you don't have the GPS data enter  "-"</b></p>
+      <div id="section" style = "margin-left: 50px !important;margin-top: 10px !important;">
     	<button id = "add" style="display: inline;float:right;" class="btn btn-info btn-md">Add Stop</button>
     	
     	{{ Form::open(array('url'=>'edit_done','method' => 'POST')) }}
-  	{{ Form::label('route', 'Enter Route Number') }}
-  	 
+  	{{ Form::label('routen', 'Enter Route Number') }}
+  	{{ Form::hidden('proc', "add") ;}}
     	
   	<input type="text" id = "route" name="route" required style="height:40px;width:400px;">
   	<input type="hidden" id = "count" name="size" value="1">
@@ -37,11 +46,21 @@ p.uppercase {
      <script>
 	var count = 0;
 	var first = 1;
+	var flag = true;
 	$('#add').on('click', function (e) {
 	
 		//var newdiv = document.createElement('div');
 		//newdiv.innerHTML
-		
+		var route_entered = document.getElementById('route').value;
+		var routes = <?php echo json_encode($city_data)?>;
+		for(var m in routes) {
+			if(routes[m]==route_entered){
+				alert("The route already exists. Please edit it");
+				flag = false;
+			break;
+			}
+		}
+		if(flag){
 		if(first==1){
 			var init = "<tr><td> stop_pos</td><td>stop_name  </td><td> stop_lat  </td><td> stop_lon </td></tr> ";
 			$('table#form').append(init);
@@ -64,7 +83,7 @@ p.uppercase {
 		*/		
 		count++;
 		document.getElementById('count').value = count; 
-		
+		}
 	});
 	</script>
      </table>

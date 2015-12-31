@@ -76,13 +76,8 @@ Route::post('geocode_data',  function()
 });
 */
 Route::post('geocode_data', 'HeadController@cache_geocode');
-
-Route::get('geocode_data',  function()
-{
-	$inp = Input::all();
-	return $inp;
-});
-
+Route::get('download_route', 'HeadController@download_route');
+Route::get('edit_this_route', 'HeadController@edit_curr_route');
 Route::post('main', 'HeadController@route_finder');
 Route::get('main', 'HeadController@route_init');
 Route::post('header', 'HeadController@header_proc');

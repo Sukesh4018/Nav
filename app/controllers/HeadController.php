@@ -181,8 +181,16 @@ function del($table,$route){
 
 function edit_done(){
 	$inp = Input::all();
-	$city = Session::get('editCity');
-	$trans = Session::get('editTrans');
+	$proc = $inp['proc'];
+	if($proc=="info"){
+		$city = Session::get('city');
+		$trans = Session::get('trans');
+	}
+	else{
+		$city = Session::get('editCity');
+		$trans = Session::get('editTrans');
+	}
+	
 	//$table = $city.'_'.$trans.'_data';
 	$table = $city.'_'.$trans.'_route';
 	$count = $inp['size'];
@@ -218,6 +226,11 @@ function edit_done(){
    				  						
    			}
 	}
+	if($proc=="info"){
+		echo '<script>window.alert("Successfully updated the route!");</script>';
+		return $this->route_init();;
+	}
+	else{
 	if($op=="edit"){
 		echo '<script>window.alert("Successfully updated the route!");</script>';
 		return View::make('manual_upload');
@@ -225,6 +238,7 @@ function edit_done(){
 	else{
 		echo '<script>window.alert("Successfully added the route!");</script>';
 		return View::make('add_route');
+	}
 	}
 	
 	
@@ -342,6 +356,60 @@ function cache_geocode(){
 	}
 	$rep = "success ".sizeof($arr);
 	return $rep;
+}
+
+function download_route(){
+    $inp = Input::all();
+    $route = Session::get('route');
+    $city = Session::get('city');
+    $trans = Session::get('trans');
+    $name = public_path().'/'.$city.'_'.$trans.'_'.$route.'.csv';
+         
+    if($route!=""){
+    $file = fopen($name, "w");
+    $query = "select route,stop_name,stop_lat,stop_lon from ".$city.'_'.$trans.'_'."route, ".$city.'_'.$trans.'_'."stop where route = :var and ".$city.'_'.$trans.'_'."route.stop_id = ".$city.'_'.$trans.'_'."stop.stop_id ORDER BY ABS(stop_pos)";
+    $data = DB::select( DB::raw($query), array('var' => $route,));
+    foreach($data as $datum){
+    	$temp = $datum->route.",".$datum->stop_name.",".$datum->stop_lat.",".$datum->stop_lon."\n" ;
+    	fwrite($file,$temp);
+    }
+    
+    header('Content-Description: File Transfer');
+    header('Content-Type: application/octet-stream');
+    header('Content-Disposition: attachment; filename="'.basename($name).'"');
+    header('Expires: 0');
+    header('Cache-Control: must-revalidate');
+    header('Pragma: public');
+    header('Content-Length: ' . filesize($name));
+    
+    //return "ok";
+    readfile($name);
+    system("rm ".$name);
+    }
+    else{
+    	echo '<script>window.alert("Please select a route!");</script>';
+    	return $this->route_init();
+    }
+    
+
+}
+
+function edit_curr_route(){
+	
+	$route = Session::get('route');
+    	$city = Session::get('city');
+    	$trans = Session::get('trans');
+	$table = $city.'_'.$trans.'_route';	
+	$res = DB::table($table)->select('route')->where('route',$route)->distinct()->get();
+	
+	if(sizeof($res)==1){
+		
+		$stops = DB::table($table)->where('route',$route)->get();
+		$query = "select * from ".$city.'_'.$trans."_route , ".$city.'_'.$trans."_stop where route = :var and ".$city.'_'.$trans."_route.stop_id = ".$city.'_'.$trans."_stop.stop_id ORDER BY ABS(stop_pos);";
+		$stops = DB::select( DB::raw($query), array('var' => $route,));
+		return View::make('edit_route')->with('datam',array($stops,$route));
+	}
+
 }
 
 
