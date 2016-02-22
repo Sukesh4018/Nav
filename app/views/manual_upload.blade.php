@@ -8,14 +8,14 @@
    		 $i = $i+1;
   	}
  ?>
- @include('up')
+
     <title>Edit Route</title>
 <style>
 p.uppercase {
     text-transform: uppercase;
 }
 </style>
-
+ @include('up')
 <script>
   $(function() {
     var availableroute = <?php echo json_encode($city_data)?>;
@@ -25,6 +25,8 @@ p.uppercase {
     });
   });
 </script>
+
+<div style="width: 100%; overflow: hidden;">
 <div id="nav" class="btn-group">
 
 	<a href="upload" class="btn btn-info btn-lg btn-block" role="button"> GTFS Zip</a>
@@ -34,9 +36,9 @@ p.uppercase {
   	<a href="upload_file" class="btn btn-info btn-lg btn-block" role="button">Upload File</a>
 
 </div>
-<p  style="font-size:32;margin-left: 50px !important;margin-top: 10px !important;"><b><i>Enter the Route Number you wish to Modify</i></b></p>
+
   <div id="section" style = "margin-left: 50px !important;margin-top: 10px !important;">
- 	
+ 	<p  style="font-size:32;"><b><i>Enter the Route Number you wish to Modify</i></b></p>
 	 {{ Form::open(array('url'=>'edit_help','method' => 'POST')) }}
 	 {{ Form::hidden('handle', 'insert') }}
 	 {{ Form::label('routeNo', 'Route Number: ') }}
@@ -109,5 +111,6 @@ p.uppercase {
 		
 	});
 	</script> 
+  </div>
   </div>
 

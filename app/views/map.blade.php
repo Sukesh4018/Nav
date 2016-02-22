@@ -64,6 +64,7 @@ p {
     <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
  @include('header_js')
+ 	<title>Stops Info</title>
  <body>
 
 <div id="header">
@@ -71,8 +72,10 @@ p {
 <nav class="navbar navbar-inverted navbar-static-top">
 <a class="navbar-brand" rel="home" href="get_search" title="Bus Route Portal" style="float:left;">
         <img style="max-width:80px; margin-top: -20px; "
-            alt = "Logo" src="http://localhost/Nav/public/img/Bus.png">
+            alt = "Logo" src={{asset('img/Bus.png')}}>
+
 </a>
+
  <p class="navbar-brand" >{{Session::get('city')}}, {{Session::get('trans')}}</p> 
  {{ Form::open(array('url'=>'get_search','method' => 'GET','class'=>'navbar-form navbar-left')) }}
 	{{ Form::submit('Change Agency',['class' =>'btn btn-success btn-block btn-lg']) }}
@@ -91,14 +94,36 @@ p {
 
 
   </div>
-   <div class="btn-group" role="group" aria-label="..." style ="float:right;"; >
-  <button id = "font" onclick="maximizeText()" type="button" class="btn btn-default  btn-group-lg">A+</button>
-  <button id = "font" onclick="minimizeText()" type="button" class="btn btn-default  btn-group-lg">A-</button>
+
+<div class="dropdown" style ="float:right;margin-top:15px;margin-right:80px;"; >
+  <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+        <?php echo Session::get('user'); ?>  
+    <span class="caret"></span>
+  </button>
+  <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
+    <li><a href="#">Action</a></li>
+    <li><a href="change_pwd">Change Password</a></li>>
+    <li role="separator" class="divider"></li>
+    <li><a href="logout">Logout</a></li>
+  </ul>
 </div>
+
+<a class="navbar-brand" rel="home" href="download_app" title="Download Android App" style="float:right;">
+        <img style="max-width:120px; margin-top: -5px; "
+            alt = "Logo" src={{asset('img/downloadAppAndroid.png')}}>
+
+</a>
+
 </nav>
 </div>
 
-<title>Stops Info</title>
+<div class="btn-group" role="group" aria-label="..." style ="float:left;margin-top:15px;margin-left:15px;"; >
+  <button id = "font" onclick="maximizeText()" type="button" class="btn btn-default  btn-group-lg">A+</button>
+  <button id = "font" onclick="minimizeText()" type="button" class="btn btn-default  btn-group-lg">A-</button>
+</div>
+
+
+
 
 
 
@@ -146,10 +171,13 @@ p {
 </div>
 
 <script>
-var points = <?php if($data[0]!='get'){if(isset($stops_data)){echo json_encode($stops_data);}}?>;  
+
+var route_flag =  <?php if($data[0]!='get'){if(isset($stops_data)){echo "true";}else{echo "false";}}else{echo "false";} ?>;
+var points = <?php if($data[0]!='get'){if(isset($stops_data)){echo json_encode($stops_data);}else{echo "[]";}}else{echo "[]";}?>;  
 var city = <?php echo json_encode($city); ?>;
 var trans = <?php echo json_encode($trans); ?>;
-if(points.length==0){
+
+if(points.length==0&&route_flag){
 	document.getElementById("map-canvas").innerHTML = "<h1><i>No Such route Exists....</i></h1>";
 }
 else{
@@ -162,9 +190,14 @@ document.getElementById("map-canvas").style.overflow = "auto";
 document.getElementById("map-canvas").innerHTML = disp;
 }
 $('#stops').on('click', function (e) {
-
+if(route_flag){
 document.getElementById("map-canvas").style.overflow = "auto";
 document.getElementById("map-canvas").innerHTML = disp;
+}
+else{
+    document.getElementById("map-canvas").innerHTML = "<h1><i>Please select route</i></h1>";
+
+  }
 });
   
 if(document.body.style.fontSize==""){
@@ -400,6 +433,120 @@ request = $.ajax({
    });
    
   }
+  /* 
+   // Snap a user-created polyline to roads and draw the snapped path
+function runSnapToRoad(path) {
+  var pathValues = [];
+  for(var k in dislat){
+  	 pathValues.push(dislat[k].','.dislon[k]);
+  }
+  
+
+  $.get('https://roads.googleapis.com/v1/snapToRoads?path=-35.27801,149.12958|-35.28032,149.12907|-35.28099,149.12929|-35.28144,149.12984|-35.28194,149.13003|-35.28282,149.12956|-35.28302,149.12881|-35.28473,149.12836', {
+   interpolate: true,
+        key:AIzaSyB5mBXMQ3njnxXJLe6chM9vcKvbLADmUfg
+
+    
+  }, function(data) {
+    processSnapToRoadResponse(data);
+    drawSnappedPolyline();
+    getAndDrawSpeedLimits();
+  });
+}
+
+// Store snapped polyline returned by the snap-to-road method.
+function processSnapToRoadResponse(data) {
+  snappedCoordinates = [];
+  placeIdArray = [];
+  for (var i = 0; i < data.snappedPoints.length; i++) {
+    var latlng = new google.maps.LatLng(
+        data.snappedPoints[i].location.latitude,
+        data.snappedPoints[i].location.longitude);
+    snappedCoordinates.push(latlng);
+    placeIdArray.push(data.snappedPoints[i].placeId);
+  }
+}
+
+// Draws the snapped polyline (after processing snap-to-road response).
+function drawSnappedPolyline() {
+  var snappedPolyline = new google.maps.Polyline({
+    path: snappedCoordinates,
+    strokeColor: 'black',
+    strokeWeight: 3
+  });
+
+  snappedPolyline.setMap(map);
+  polylines.push(snappedPolyline);
+}
+
+// Gets speed limits (for 100 segments at a time) and draws a polyline
+// color-coded by speed limit. Must be called after processing snap-to-road
+// response.
+function getAndDrawSpeedLimits() {
+  for (var i = 0; i <= placeIdArray.length / 100; i++) {
+    // Ensure that no query exceeds the max 100 placeID limit.
+    var start = i * 100;
+    var end = Math.min((i + 1) * 100 - 1, placeIdArray.length);
+
+    drawSpeedLimits(start, end);
+  }
+}
+
+// Gets speed limits for a 100-segment path and draws a polyline color-coded by
+// speed limit. Must be called after processing snap-to-road response.
+function drawSpeedLimits(start, end) {
+    var placeIdQuery = '';
+    for (var i = start; i < end; i++) {
+      placeIdQuery += '&placeId=' + placeIdArray[i];
+    }
+
+    $.get('https://roads.googleapis.com/v1/speedLimits',
+        'key=' + apiKey + placeIdQuery,
+        function(speedData) {
+          processSpeedLimitResponse(speedData, start);
+        }
+    );
+}
+
+// Draw a polyline segment (up to 100 road segments) color-coded by speed limit.
+function processSpeedLimitResponse(speedData, start) {
+  var end = start + speedData.speedLimits.length;
+  for (var i = 0; i < speedData.speedLimits.length - 1; i++) {
+    var speedLimit = speedData.speedLimits[i].speedLimit;
+    var color = getColorForSpeed(speedLimit);
+
+    // Take two points for a single-segment polyline.
+    var coords = snappedCoordinates.slice(start + i, start + i + 2);
+
+    var snappedPolyline = new google.maps.Polyline({
+      path: coords,
+      strokeColor: color,
+      strokeWeight: 6
+    });
+    snappedPolyline.setMap(map);
+    polylines.push(snappedPolyline);
+  }
+}
+
+function getColorForSpeed(speed_kph) {
+  if (speed_kph <= 40) {
+    return 'purple';
+  }
+  if (speed_kph <= 50) {
+    return 'blue';
+  }
+  if (speed_kph <= 60) {
+    return 'green';
+  }
+  if (speed_kph <= 80) {
+    return 'yellow';
+  }
+  if (speed_kph <= 100) {
+    return 'orange';
+  }
+  return 'red';
+}
+*/
    
    /*
  var service = new google.maps.DistanceMatrixService();

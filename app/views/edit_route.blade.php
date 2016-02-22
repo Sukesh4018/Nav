@@ -1,29 +1,102 @@
- @include('up')
-    <title>Edit Route</title>
-<style>
+ 
+ <style>
+#header {
+    background-color:black;
+    color:white;
+    text-align:center;
+    padding:5px;
+    height:80px;
+}
+#nav {
+    line-height:30px;
+    background-color:#eeeeee;
+    height:100%;
+    width:150px;
+    float:left;
+    padding:5px;
+}
+#section {
+    padding:10px;
+    float:left;
+    padding:10px;
+
+}
+#footer {
+    background-color:black;
+    color:white;
+    clear:both;
+    text-align:center;
+    padding:5px;
+}
+
 p.uppercase {
     text-transform: uppercase;
 }
-</style>
+</style> 
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    <html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>Edit Route</title>
+ @include('header_js')
+ 
+ <body>
+
+<div id="header">
+<nav class="navbar navbar-inverted navbar-static-top">
+<a class="navbar-brand" rel="home" href="get_search" title="Bus Route Portal" style="float:left;">
+        <img style="max-width:80px; margin-top: -20px; "
+             src="http://localhost/Nav/public/img/Bus.png">
+</a>
+<div  class="btn-group">
+ <p class="navbar-brand" class="uppercase" style="font-size:32; float:left;margin-top: 10px !important;" >{{Session::get('city')}}, {{Session::get('trans')}}
+ {{ Form::open(array('url'=>'get_search','method' => 'GET','class'=>'navbar-form navbar-left')) }}
+	{{ Form::submit('Change Agency',['class' =>'btn btn-success btn-block btn-lg']) }}
+{{ Form::close() }}
+ 
+ {{ Form::open(array('url'=>'upload','method' => 'GET','class'=>'navbar-form navbar-right')) }}
+		{{ Form::submit('Add Data',['class' =>'btn btn-success btn-block btn-lg ']) }}
+{{ Form::close() }}
+
+{{ Form::open(array('url'=>'main','method' => 'GET','class'=>'navbar-form navbar-right')) }}
+		{{ Form::submit('Info',['class' =>'btn btn-success btn-block btn-lg']) }}
+{{ Form::close() }}
+
+</p>
+</div>
+<div class="dropdown" style ="float:right;margin-top:15px;margin-right:80px;"; >
+  <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+        <?php echo Session::get('user'); ?>  
+    <span class="caret"></span>
+  </button>
+  <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
+    <li><a href="#">Action</a></li>
+    <li><a href="change_pwd">Change Password</a></li>>
+    <li role="separator" class="divider"></li>
+    <li><a href="logout">Logout</a></li>
+  </ul>
+</div>
+</nav>
+</div>
+
 
 <div id="nav" class="btn-group">
 
-	<button id = "stops" type="button" class="btn btn-info btn-lg btn-block" >Stops</button><br><br>
-  	<button id = "map" type="button" class="btn btn-info btn-lg btn-block" >Map</button><br><br>
-  	{{ Form::open(array('url'=>'edit_this_route','method' => 'GET')) }}
-		{{ Form::submit('Edit Route',['class' =>'btn btn-info btn-block btn-lg ']) }}
-	{{ Form::close() }}
+	
   	{{ Form::open(array('url'=>'download_route','method' => 'GET')) }}
 		{{ Form::submit('Download',['class' =>'btn btn-info btn-block btn-lg ']) }}
 	{{ Form::close() }}
 
 </div>
+
 <p  style="font-size:32;margin-left: 50px !important;margin-top: 10px !important;"><b><i>Edit Select Route</i></b></p>
+ 
   <div id="section" style = "margin-left: 50px !important;margin-top: 10px !important;">
   <p style="font-size:24px;display: inline;margin-right:200px;"><nobr><?php $route = Session::get('route');if($route!=""){echo 'Edit Route:  "'.$route.'"';} ?></nobr></p>
     
 <?php
-	set_time_limit(0);
 	$i = 0;
 	if(isset($datam)){
 	$data = $datam[0];
@@ -50,6 +123,9 @@ p.uppercase {
   	echo Form::submit('Save',['class' =>'btn btn-primary btn-md']) ;
     	echo Form::close();
     	
+    	echo Form::open(array('url'=>'main','method' => 'GET')) ;
+		echo Form::submit('Cancel',['class' =>'btn btn-info btn-md ', 'style'=>'float:right']) ;
+	echo Form::close() ;
   	}
   	else{
   		if(isset($no_data)){
@@ -87,5 +163,16 @@ p.uppercase {
 		
 	});
 	</script> 
+	
+	<script>
+function maximizeText() {
+  document.body.style.fontSize = parseFloat(document.body.style.fontSize) + (2 * 0.2) + "em";
+} 
+function minimizeText() {
+  document.body.style.fontSize = parseFloat(document.body.style.fontSize) - (2 * 0.2) + "em";
+} 
+</script>
   </div>
+  
+  <table>
 

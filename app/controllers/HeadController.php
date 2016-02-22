@@ -67,7 +67,9 @@ function add_agency(){
 	DB::statement($create);
 	$create  = "create table ".$city.'_'.$trans."_route(route varchar(500), stop_id INT, stop_pos varchar(500))";
 	DB::statement($create);
-
+	$stops = "ALTER TABLE ".$city.'_'.$trans."_stop
+	ADD PRIMARY KEY (stop_id,stop_name)";
+	DB::statement($stops);
 	Session::put('editCity',$city);
 	Session::put('editTrans',$trans);
 	return View::make('add_route')->with('city',$city);
@@ -216,7 +218,7 @@ function edit_done(){
  			$stops_id = $stops_id+1;
    			DB::statement("INSERT INTO ".$city."_".$trans."_route(route,stop_id,stop_pos) values('".$route."' ,'".$stops_id."' ,'".$t1."')"); 
    				  				  			
-   			DB::statement("INSERT INTO ".$city."_".$trans."_stop(stop_id,stop_name,stop_lat,stop_lon) values('".$stops_id."' ,'".$t2."' ,'".$t3."' ,'".$t4."')"); 
+   			DB::statement("REPLACE INTO ".$city."_".$trans."_stop(stop_id,stop_name,stop_lat,stop_lon) values('".$stops_id."' ,'".$t2."' ,'".$t3."' ,'".$t4."')"); 
    						
    		}
    		else{
@@ -282,7 +284,7 @@ function session_init(){
 	return $this->route_init();
 }
 function route_init(){
-	
+	Session::put('route',"");
 	$name = Session::get('selec');
 	if($name != ""){
 		Session::put('trans',$name);
@@ -363,6 +365,44 @@ function download_route(){
     $route = Session::get('route');
     $city = Session::get('city');
     $trans = Session::get('trans');
+    $route_mod = str_replace(array(".","/"), '-', $route);
+    $name = public_path().'/'.$city.'_'.$trans.'_'.$route_mod.'.csv';
+         
+    if($route!=""){
+    $file = fopen($name, "w");
+    $query = "select route,stop_name,stop_lat,stop_lon from ".$city.'_'.$trans.'_'."route, ".$city.'_'.$trans.'_'."stop where route = :var and ".$city.'_'.$trans.'_'."route.stop_id = ".$city.'_'.$trans.'_'."stop.stop_id ORDER BY ABS(stop_pos)";
+    $data = DB::select( DB::raw($query), array('var' => $route,));
+    foreach($data as $datum){
+    	$temp = $datum->route.",".$datum->stop_name.",".$datum->stop_lat.",".$datum->stop_lon."\n" ;
+    	fwrite($file,$temp);
+    }
+    
+    header('Content-Description: File Transfer');
+    header('Content-Type: application/octet-stream');
+    header('Content-Disposition: attachment; filename="'.basename($name).'"');
+    header('Expires: 0');
+    header('Cache-Control: must-revalidate');
+    header('Pragma: public');
+    header('Content-Length: ' . filesize($name));
+    
+    //return "ok";
+    readfile($name);
+    system("rm ".$name);
+    }
+    else{
+    	echo '<script>window.alert("Please select a route!");</script>';
+    	return $this->route_init();
+    }
+    
+
+}
+
+function send_data($city,$trans,$route){
+	/*
+    $route = Session::get('route');
+    $city = Session::get('city');
+    $trans = Session::get('trans');
+    */
     $name = public_path().'/'.$city.'_'.$trans.'_'.$route.'.csv';
          
     if($route!=""){
@@ -394,12 +434,70 @@ function download_route(){
 
 }
 
+function get_data(){
+	 $inp = Input::all();
+	 $city = $inp['city'];
+	 $trans  = $inp['corp'];
+	 $route  = $inp['route'];
+	 $stop_list = json_decode($inp['stopList'],true);
+	 $lat_list = json_decode($inp['latList'],true);
+	 $lon_list = json_decode($inp['lonList'],true);
+	 DB::statement("INSERT INTO test(city,route) values('$city','$route')");	 
+	 $quer = "select * from cities where name = :var0 and transport_corp = :var1";
+	 $result = DB::select( DB::raw($quer), array('var0' => $city,'var1' => $trans,));
+	 if(sizeof($result)!=1){
+	 	DB::statement("INSERT INTO cities(name,transport_corp) values('$city','$trans')");
+		$create  = "create table ".$city.'_'.$trans."_stop(stop_id INT, stop_name varchar(500), stop_lat varchar(500), stop_lon varchar(500))";
+		DB::statement($create);
+		$create  = "create table ".$city.'_'.$trans."_route(route varchar(500), stop_id INT, stop_pos varchar(500))";
+		DB::statement($create);
+		
+		$stops = "ALTER TABLE ".$city.'_'.$trans."_stop ADD PRIMARY KEY (stop_id,stop_name)";
+		DB::statement($stops);
+	 }
+	 $count  = sizeof($stop_list);
+	 $table = $city."_".$trans."_route";
+	 $this->del($table,$route);
+	 for($i=0;$i<$count;$i++){
+		$t1 = $i;
+		$t2 = $stop_list[$i];
+		$t3 = $lat_list[$i];
+		$t4 = $lon_list[$i];
+		//echo $t1." ".$t2." ".$t3." ".$t4." ";
+		//DB::table($table)->insert(array('route' => $route, 'stop_pos' => $t1, 'stop_name' => $t2,'stop_lat' =>$t3,'stop_lon'=>$t4));				
+		$query = "SELECT stop_id FROM ".$city."_".$trans."_stop WHERE stop_name = :var"; 
+  	        $stopid = DB::select( DB::raw($query), array('var' => $t2,));
+   		if(sizeof($stopid)!=1){
+   			$stops_id =  DB::table($city."_".$trans."_stop")->max('stop_id');
+ 			$stops_id = $stops_id+1;
+   			DB::statement("INSERT INTO ".$city."_".$trans."_route(route,stop_id,stop_pos) values('".$route."' ,'".$stops_id."' ,'".$t1."')"); 
+   				  				  			
+   			DB::statement("REPLACE INTO ".$city."_".$trans."_stop(stop_id,stop_name,stop_lat,stop_lon) values('".$stops_id."' ,'".$t2."' ,'".$t3."' ,'".$t4."')"); 
+
+   						
+   		}
+   		else{
+   			$query = "INSERT INTO ".$city."_".$trans."_route(route,stop_id,stop_pos) values('".$route."' ,'".$stopid[0]->stop_id."' ,'".$t1."')";
+   			DB::statement($query); 
+   			DB::statement("REPLACE INTO ".$city."_".$trans."_stop(stop_id,stop_name,stop_lat,stop_lon) values('".$stopid[0]->stop_id."' ,'".$t2."' ,'".$t3."' ,'".$t4."')");
+
+   				
+   				  						
+   			}
+	}
+	
+	
+	 //print_r($city.','.$route);
+}
+
 function edit_curr_route(){
 	
 	$route = Session::get('route');
     	$city = Session::get('city');
     	$trans = Session::get('trans');
 	$table = $city.'_'.$trans.'_route';	
+	
+	if($route!=""){
 	$res = DB::table($table)->select('route')->where('route',$route)->distinct()->get();
 	
 	if(sizeof($res)==1){
@@ -409,9 +507,27 @@ function edit_curr_route(){
 		$stops = DB::select( DB::raw($query), array('var' => $route,));
 		return View::make('edit_route')->with('datam',array($stops,$route));
 	}
+	
+	}
+	else{
+    		echo '<script>window.alert("Please select a route!");</script>';
+    		return $this->route_init();
+    	}
 
 }
 
+function download_app(){
+	$name = public_path().'/files/Travigator-debug.apk';
+	header('Content-Description: File Transfer');
+    	header('Content-Type: application/octet-stream');
+    	header('Content-Disposition: attachment; filename="'.basename($name).'"');
+    	header('Expires: 0');
+    	header('Cache-Control: must-revalidate');
+    	header('Pragma: public');
+    	header('Content-Length: ' . filesize($name));
+    	readfile($name);
+}
 
 }
+
 

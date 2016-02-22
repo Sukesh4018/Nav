@@ -16,9 +16,9 @@ set_time_limit(0);
     <p  style="font-size:18;margin-left: 5px !important;margin-top: 1px !important;">1. The file should be in .csv format i.e. Comma Seperated Values.<br> 2. Format: Route_no,stop_name,stop_lat,stop_lon <br> 3. The next input starts in newline. </p></br>
     {{ Form::open(array('url'=>'upload_file', 'files'=>true, 'enctype' => 'multipart/form-data', 'method' => 'POST')) }}
     	{{ Form::label('Name of the City') }}
-    	{{ Form::text('city') }}</br></br>
+    	{{ Form::text('city','',array('required' => 'required')) }}</br></br>
     	{{ Form::label('Name of the Transport Agency') }}
-    	{{ Form::text('trans_agen') }}</br></br>
+    	{{ Form::text('trans_agen','',array('required' => 'required')) }}</br></br>
     	{{ Form::label('Choose a .csv file to upload:') }}</br></br>
  	{{ Form::file('zip_file',['class' =>'btn btn-success']) }}</br></br>
  	{{ Form::submit('Upload',['class' =>'btn btn-primary']) }}
