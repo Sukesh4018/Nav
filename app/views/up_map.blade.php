@@ -66,7 +66,10 @@ p.uppercase {
 
 </a>
 
-<p class="uppercase" style="font-size:24; float:left;margin-top: 10px !important;">{{Session::get('city')}}, {{Session::get('trans')}}</p> 
+<p class="uppercase" style="font-size:24; float:left;margin-top: 10px !important;">
+<?php if(Session::get('trans')!=""){
+echo  Session::get('city').', '.Session::get('trans');
+}?></p> 
   <div  class="btn-group">
  {{ Form::open(array('url'=>'get_search','method' => 'GET','class'=>'navbar-form navbar-left')) }}
 	{{ Form::submit('Change',['class' =>'btn btn-success btn-block btn-lg']) }}
@@ -86,7 +89,18 @@ p.uppercase {
     <span class="caret"></span>
   </button>
   <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
-    <li><a href="#">Action</a></li>
+  <?php 
+  if(Auth::user()->role=="1"){
+  	echo '<li><a href="volunteer_view">Volunteer Ops</a></li>';
+  	}
+  else if(Auth::user()->role=="2"){
+  	echo '<li><a href="request_volunteer">Be as Volunteer</a></li>';
+  }
+  else {
+  	echo '<li><a href="admin_view">Admin Ops</a></li>';
+  }
+  ?>
+    
     <li><a href="change_pwd">Change Password</a></li>
     <li role="separator" class="divider"></li>
     <li><a href="logout">Logout</a></li>
@@ -99,5 +113,9 @@ p.uppercase {
 
 </a>
 
+
+
 </nav>
+
+
 

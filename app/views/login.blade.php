@@ -31,12 +31,12 @@
   font-family: "Roboto", sans-serif;
   text-transform: uppercase;
   outline: 0;
-  background: #4CAF50;
+  background: #415645;
   width: 100%;
   border: 0;
   padding: 15px;
   color: #FFFFFF;
-  font-size: 14px;
+  font-size: 32px;
   -webkit-transition: all 0.3 ease;
   transition: all 0.3 ease;
   cursor: pointer;
@@ -46,11 +46,11 @@
 }
 .form .message {
   margin: 15px 0 0;
-  color: #b3b3b3;
+  color: #000000;
   font-size: 12px;
 }
 .form .message a {
-  color: #4CAF50;
+  color: #0000ff;
   text-decoration: none;
 }
 .form .register-form {
@@ -102,14 +102,15 @@ body {
 
 </style>
 <!doctype html>
-<html>
+<html lang="en">
 <head>
 
 </head>
-<title>Login</title>
+<title>Login - Bus Route Portal</title>
 <body>
 
 <div class="login-page">
+<h1 style = "color:#FFFFFF;font-size:36px;"> Bus Route Portal </h1>
   <div class="form">
     {{ Form::open(array('url'=>'login','class' => 'login-form')) }}
     @if(Session::has('error'))
@@ -118,11 +119,13 @@ body {
 	</div>
     @endif
 	<div class="controls">
-	{{ Form::text('username','',array('id'=>'','class'=>'form-control span6','placeholder' => 'UserName')) }}
+	 {{ Form::label('username', 'Username',array('style'=>'float:left;')) }}
+	{{ Form::text('username','',array('id'=>'','class'=>'form-control span6','placeholder' => 'UserName','id' => 'username')) }}
 	<p class="errors">{{$errors->first('email')}}</p>
 	</div>
 	<div class="controls">
-	{{ Form::password('password',array('class'=>'form-control span6', 'placeholder' => 'Password')) }}
+	 {{ Form::label('password', 'Enter Password',array('style'=>'float:left;')) }}
+	{{ Form::password('password',array('class'=>'form-control span6', 'placeholder' => 'Password','id' => 'password')) }}
 	<p class="errors">{{$errors->first('password')}}</p>
 	</div>
       <button>Login</button>

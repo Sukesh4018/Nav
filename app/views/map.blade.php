@@ -5,119 +5,30 @@ if(is_array($data)){
 	$stops_data = array();
 	$city = Session::get('city');
 	$trans = Session::get('trans');
+	$current_route = Session::get('route');
+	$stop_names = "";
 	if($stops != 'get'){
 	$i = 0;
 	foreach($stops as $stop){
     		$stops_data[$i] = $stop;
+    		$stop_names = $stop_names.",".$stop->stop_name;
    		 $i = $i+1;
   	} 
   	}
+  	Session::put('stop_names',$stop_names);
   	$i = 0;
   	foreach($routes as $route){
     		$routes_data[$i] = $route->route;
    		 $i = $i+1;
   	}
+  	
   }
 ?>
- <style>
-#header {
-    background-color:black;
-    color:white;
-    text-align:center;
-    padding:5px;
-    height:80px;
-}
-    
-#nav {
-    line-height:30px;
-    background-color:#eeeeee;
-    height:100%;
-    width:150px;
-    float:left;
-    padding:5px;
-}
-#section {
-    padding:10px;
-    float:left;
-    padding:10px;
-}
-#footer {
-    background-color:black;
-    color:white;
-    clear:both;
-    text-align:center;
-    padding:5px;
-}
 
-p {
-    text-transform: uppercase;
-}
+ @include('up_map')
+ <title>Stops Info</title>
 
-.margin-left{
-    margin-left: 10px !important;
-}
-</style> 
-
-
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-    <html xmlns="http://www.w3.org/1999/xhtml">
-    <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
- @include('header_js')
- 	<title>Stops Info</title>
- <body>
-
-<div id="header">
-
-<nav class="navbar navbar-inverted navbar-static-top">
-<a class="navbar-brand" rel="home" href="get_search" title="Bus Route Portal" style="float:left;">
-        <img style="max-width:80px; margin-top: -20px; "
-            alt = "Logo" src={{asset('img/Bus.png')}}>
-
-</a>
-
- <p class="navbar-brand" >{{Session::get('city')}}, {{Session::get('trans')}}</p> 
- {{ Form::open(array('url'=>'get_search','method' => 'GET','class'=>'navbar-form navbar-left')) }}
-	{{ Form::submit('Change Agency',['class' =>'btn btn-success btn-block btn-lg']) }}
-{{ Form::close() }}
-
-  <div  class="btn-group">
-
- {{ Form::open(array('url'=>'upload','method' => 'GET','class'=>'navbar-form navbar-right')) }}
-		{{ Form::submit('Add Data',['class' =>'btn btn-success btn-block btn-lg ']) }}
-{{ Form::close() }}
-
-
-{{ Form::open(array('url'=>'main','method' => 'GET','class'=>'navbar-form navbar-right')) }}
-		{{ Form::submit('Info',['class' =>'btn btn-success btn-block btn-lg ']) }}
-{{ Form::close() }}
-
-
-  </div>
-
-<div class="dropdown" style ="float:right;margin-top:15px;margin-right:80px;"; >
-  <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-        <?php echo Session::get('user'); ?>  
-    <span class="caret"></span>
-  </button>
-  <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
-    <li><a href="#">Action</a></li>
-    <li><a href="change_pwd">Change Password</a></li>>
-    <li role="separator" class="divider"></li>
-    <li><a href="logout">Logout</a></li>
-  </ul>
-</div>
-
-<a class="navbar-brand" rel="home" href="download_app" title="Download Android App" style="float:right;">
-        <img style="max-width:120px; margin-top: -5px; "
-            alt = "Logo" src={{asset('img/downloadAppAndroid.png')}}>
-
-</a>
-
-</nav>
-</div>
-
-<div class="btn-group" role="group" aria-label="..." style ="float:left;margin-top:15px;margin-left:15px;"; >
+<div class="btn-group" role="group" aria-label="..." style ="float:left;margin-top:0px;margin-left:15px;"; >
   <button id = "font" onclick="maximizeText()" type="button" class="btn btn-default  btn-group-lg">A+</button>
   <button id = "font" onclick="minimizeText()" type="button" class="btn btn-default  btn-group-lg">A-</button>
 </div>
@@ -137,37 +48,94 @@ p {
 </script>
   
 
-<div class="container-fluid" align="right">
 
-{{ Form::open(array('url'=>'main','method' => 'POST','class'=>'navbar-form navbar-right')) }}
+<div class="container-fluid" align="left" style="width:100%;">
 
-  <p style="font-size:24px;display: inline;margin-right:200px;"><nobr><?php if(is_array($data)){if(sizeof($data)==3){Session::put('route',$data[2]);echo 'Result for Route:  "'.$data[2].'"';}} ?></nobr></p>
+  
+  {{ Form::open(array('url'=>'main','method' => 'POST','style'=>'display:inline-block;float:right;')) }}
+
+  
   {{ Form::label('route', 'Route: ') }}
-  <input type="text" id = "route" name="route" style="height:40px;width:400px;">
-  {{ Form::submit('Go',['class' =>'btn btn-primary btn-md ']) }}
+  <input type="text" id = "route" name="route" required style="height:40px;width:400px;display:inline-block;;">
+
+  <button type="submit" class="btn btn-primary btn-md " value="Submit">Go</button>
   
 
 {{ Form::close() }}
 
+<p style="font-size:24px;display: inline; margin-left:100px;float:left;"><nobr><?php if(is_array($data)){if(sizeof($data)==4){Session::put('route',$data[2]);echo '<br>Route:  "'.$data[2].'"</nobr>';
+$info = $data[3];
+echo '&nbsp&nbsp<button id = "upvote" type="button" class="btn btn-default btn-sm " >Correct</button> '.$info[0]->upvotes." ";
+echo '<button id = "downvote" type="button" class="btn btn-primary btn-sm " >Incorrect</button> '.$info[0]->downvotes." </p>";
+}} ?>
+	
+</div>
 
+<!-- Modal -->
+<div id="myModal" class="modal fade" role="dialog">
+  <div class="modal-dialog">
 
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Select Language</h4>
+      </div>
+      <div class="modal-body">
+      <table id = "request" style = "font-size:24px;width:100%; " class="table  table-condensed f11 table-hover">
+	<tr><td>Hindi</td><td>Telugu</td><td>Tamil</td></tr>
+	<tr><td>Kannada</td><td>Gujarati</td><td>Bengali</td></tr>
+	<tr><td>Gurmukhi</td><td>Malayalam</td><td>Odiya</td></tr>
+	<tr><td>English</td><td>Hebrew</td><td>Russian</td></tr>
+      </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
 
+  </div>
+</div>
+
+<!-- Modal -->
+<div id="stop" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title" id = "stop_heading">Routes through Stop</h4>
+      </div>
+      <div class="modal-body" id = "stop-info">
+      <? php echo Session::get('route'); ?>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+
+  </div>
 </div>
 
 
 <div id="nav" class="btn-group">
-	<button id = "stops" type="button" class="btn btn-info btn-lg btn-block" >Stops</button><br><br>
-  	<button id = "map" type="button" class="btn btn-info btn-lg btn-block" >Map</button><br><br>
+	<button id = "stops" type="button" class="btn btn-primary btn-lg btn-block" >Stops</button><br><br>
+  	<button id = "map" type="button" class="btn btn-primary btn-lg btn-block" >Map</button><br><br>
   	{{ Form::open(array('url'=>'edit_this_route','method' => 'GET')) }}
-		{{ Form::submit('Edit Route',['class' =>'btn btn-info btn-block btn-lg ']) }}
+		{{ Form::submit('Edit Route',['class' =>'btn btn-primary btn-block btn-lg ']) }}
 	{{ Form::close() }}
   	{{ Form::open(array('url'=>'download_route','method' => 'GET')) }}
-		{{ Form::submit('Download',['class' =>'btn btn-info btn-block btn-lg ']) }}
+		{{ Form::submit('Download',['class' =>'btn btn-primary btn-block btn-lg ']) }}
+	{{ Form::close() }}
+	<button type="button" class="btn btn-primary btn-lg btn-block" data-toggle="modal" data-target="#myModal">Transliterate</button><br><br>
+	{{ Form::open(array('url'=>'list_route','method' => 'GET')) }}
+		{{ Form::submit('All Routes',['class' =>'btn btn-primary btn-block btn-lg ']) }}
 	{{ Form::close() }}
 </div>
 
-<div class="container-fluid" align="left" style="width:999px; height:540px;">
-  <div id="map-canvas" style="width: 100%; height: 100%;overflow: auto;"></div>
+<div class="container-fluid" align="left" style="width:899px; height:540px;">
+  <div id="map-canvas" style="width: 100%; height: 90%;overflow: auto;"></div>
 </div>
 
 <script>
@@ -176,23 +144,24 @@ var route_flag =  <?php if($data[0]!='get'){if(isset($stops_data)){echo "true";}
 var points = <?php if($data[0]!='get'){if(isset($stops_data)){echo json_encode($stops_data);}else{echo "[]";}}else{echo "[]";}?>;  
 var city = <?php echo json_encode($city); ?>;
 var trans = <?php echo json_encode($trans); ?>;
+var current_route = <?php echo json_encode($current_route); ?>;
 
 if(points.length==0&&route_flag){
 	document.getElementById("map-canvas").innerHTML = "<h1><i>No Such route Exists....</i></h1>";
 }
 else{
-var disp = "";
-for(var temp =0; temp<points.length;temp++){
- disp = disp+points[temp].stop_pos+"  "+points[temp].stop_name+"</br>";
+	var disp = "";
+	for(var temp =0; temp<points.length;temp++){
+		 disp = disp+points[temp].stop_pos+".  "+'<a data-toggle="modal" class="stoplinks" style="color: #000000;" data-datac="'+points[temp].stop_name+'" data-target="#stop" href="#">'+points[temp].stop_name+"</a></br>";
+	}
 
-}
 document.getElementById("map-canvas").style.overflow = "auto";
 document.getElementById("map-canvas").innerHTML = disp;
 }
 $('#stops').on('click', function (e) {
-if(route_flag){
-document.getElementById("map-canvas").style.overflow = "auto";
-document.getElementById("map-canvas").innerHTML = disp;
+if(route_flag){	
+	document.getElementById("map-canvas").style.overflow = "auto";
+	document.getElementById("map-canvas").innerHTML = disp;	
 }
 else{
     document.getElementById("map-canvas").innerHTML = "<h1><i>Please select route</i></h1>";
@@ -200,6 +169,165 @@ else{
   }
 });
   
+var table = document.getElementById("request");
+if (table != null) {
+    for (var i = 0; i < table.rows.length; i++) {
+        for (var j = 0; j < table.rows[i].cells.length; j++)
+        table.rows[i].cells[j].onclick = function () {
+            tableText(this);
+        };
+    }
+}
+
+function tableText(tableCell) {
+	var cell = tableCell.innerHTML;
+    	var tranl = "transl/hi";
+    	$('#myModal').modal('hide');
+    switch(cell){
+    		case "Hindi" :
+			tranl =  "transl/hi";
+			break;
+		case "Telugu" :
+			tranl =  "transl/te";
+			break;
+		case "Tamil" :
+			tranl =  "transl/ta";
+			break;
+		case "Bengali" :
+			tranl =  "transl/be";
+			break;
+		case "Gujarati" :
+			tranl =  "transl/gu";
+			break;
+		case "Kannada" :
+			tranl =  "transl/ka";
+			break;
+		case "Malayalam" :
+			tranl =  "transl/ma";
+			break;
+		case "Gurmukhi" :
+			tranl =  "transl/gr";
+			break;
+		case "Odiya" :
+			tranl =  "transl/or";
+			break;
+		case "English" :
+			tranl =  "transl/en";
+			break;
+		case "Hebrew" :
+			tranl =  "transl/he";
+			break;
+		case "Russian" :
+			tranl =  "transl/ru";
+			break;
+			
+    }
+    var url = "<?php echo Request::root(); ?>/"+tranl;
+    request = $.ajax({
+        url: url,
+        method:'get',
+        cache:false,
+        success:function(data){
+          //alert('success');
+          console.log('sucess');
+        },
+        error:function(xhr,status,error){
+        	alert(error);
+        	console.log('error');
+            //errors here
+        }
+    });
+    request.done(function (res, textStatus, jqXHR){
+        if (res.status = "ok"){     
+        	document.getElementById("map-canvas").style.overflow = "auto";
+        	var stop_names_transl  = $.parseJSON(res);
+        	var temp = "";
+        	for(var m in stop_names_transl){
+        		temp += (m+".  "+'<a  class="stoplinks" style="color: #000000;" data-datac="'+points[m-1].stop_name+'" data-toggle="modal" data-target="#stop" href="#">'+stop_names_transl[m]+'</a><br>');
+        	}
+        	disp = temp;
+		document.getElementById("map-canvas").innerHTML = disp;
+       		console.log('res');
+       }
+   });
+    
+}
+  
+
+$('#upvote').on('click', function (e) {
+var url = "<?php echo Request::root(); ?>/upvote_route";
+request = $.ajax({
+        url: url,
+        method:'post',
+        cache:false,
+        data: {"city":city,"trans":trans,"route":current_route},
+        success:function(data){
+          //alert('success');
+          console.log('sucess');
+        },
+        error:function(xhr,status,error){
+        	alert(error);
+        	console.log('error');
+            //errors here
+        }
+    });
+   });
+   
+$('#downvote').on('click', function (e) {
+var url = "<?php echo Request::root(); ?>/downvote_route";
+request = $.ajax({
+        url: url,
+        method:'post',
+        cache:false,
+        success:function(data){
+          //alert('success');
+          console.log('sucess');
+        },
+        error:function(xhr,status,error){
+        	alert(error);
+        	 console.log('error');
+            //errors here
+        }
+    });
+    request.done(function (res, textStatus, jqXHR){
+        if (res.status = "ok"){     
+ 	console.log(res);
+        
+       }
+   });
+   });
+   
+$(document).on('click','.stoplinks',function() {
+  var url = "<?php echo Request::root(); ?>/stop_info/";
+  var stop_name = $(this).text();
+  var txt = $(this).data('datac'); 
+  url = url+txt;
+  console.log(txt);
+  request = $.ajax({
+        url: url,
+        method:'get',
+        cache:false,
+        //dataType:'json',
+        data: {},
+        success:function(data){
+          //alert('success');
+          console.log('sucess');
+        },
+        error:function(xhr,status,error){
+        	alert(error);
+        	 console.log('error');
+         
+        }
+    });
+    request.done(function (res, textStatus, jqXHR){
+        if (res.status = "ok"){     
+		document.getElementById("stop-info").innerHTML = res;
+		document.getElementById("stop_heading").innerHTML = 'Routes through "'+stop_name+'"';
+        
+       }
+   });
+});
+   
 if(document.body.style.fontSize==""){
   document.body.style.fontSize = "1.5em";
 }
@@ -561,18 +689,7 @@ service.getDistanceMatrix(
     }
   }, callback);
 */
-
-
-
-
-
-
 }
-
-
-
-
-
 /*
 for(var i=0;i<routePoints.length-1;i++){
  var temp  = [routePoints[i],routePoints[i+1]];

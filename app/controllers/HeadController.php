@@ -67,9 +67,12 @@ function add_agency(){
 	DB::statement($create);
 	$create  = "create table ".$city.'_'.$trans."_route(route varchar(500), stop_id INT, stop_pos varchar(500))";
 	DB::statement($create);
+	$create  = "create table ".$city.'_'.$trans."_info(route varchar(500),upvotes INT default 0, downvotes INT default 0 , views INT default 0, created_by varchar(500) default 'admin',verified_by varchar(500) default 'admin',edited_by varchar(500) default 'admin' ,PRIMARY KEY(route)) ";
+	DB::statement($create);
 	$stops = "ALTER TABLE ".$city.'_'.$trans."_stop
 	ADD PRIMARY KEY (stop_id,stop_name)";
 	DB::statement($stops);
+	
 	Session::put('editCity',$city);
 	Session::put('editTrans',$trans);
 	return View::make('add_route')->with('city',$city);
@@ -133,47 +136,6 @@ function edit_helper(){
 		return View::make('manual_upload')->with('no_data',$stops);		
 	}
 	
-	
-	/*
-	
-	$temp = $route.$start_name;
-	
-	if($handle == 'replace'){
-		$query = "replace into ".$city."_stops(stop_lon, stop_lat, stop_name) values(".$gpsx1.",".$gpsy1.",'".$start_name."')";
-		DB::statement($query);
-		$query = "replace into ".$city."_stop_times(arrival_time, departure_time) values('".$start_time."','".$end_time."')";
-		DB::statement($query);
-		echo "DONE!!!";
-	}
-	else{
-	
-	$res = DB::table($city.'_stops')->where('stop_id',$start_name)->get();
-	if(sizeof($res)==0){
-		DB::table($city.'_stops')->insert(array('stop_lon' => $gpsx1, 'stop_lat' => $gpsy1,'stop_name' =>$start_name,'stop_id'=>$start_name));	
-		DB::table($city.'_stop_times')->insert(array('trip_id' => $temp, 'arrival_time' => $start_time,'departure_time' =>$end_time,'stop_id'=>$start_name));
-		DB::table($city.'_trips')->insert(array('trip_id' => $temp, 'route_id' => $route));	
-		DB::table($city.'_routes')->insert(array('route_id' => $route));
-		echo "DONE!!!";
-	}
-	else{
-		echo "The stop already exists! Do you wish to edit it?\n";
-
-		
-		$stop_name = $res[0]->stop_name;
-		$stop_lon = $res[0]->stop_lon;
-		$stop_lat = $res[0]->stop_lat;
-		$res = DB::table($city.'_stop_times')->where('stop_id',$start_name)->get();
-		$arr_time = $res[0]->arrival_time;
-		$dep_time = $res[0]->departure_time;
-		$data = array($route,$stop_name,$stop_lon,$stop_lat,$arr_time,$dep_time);
-
-		return View::make('edit_route')->with('data',$data);
-		
-	}
-	}
-	*/
-	
-	
 }
 
 
@@ -181,9 +143,39 @@ function del($table,$route){
 	DB::table($table)->where('route', '=', $route)->delete();
 }
 
+function update_history($city,$trans,$route,$inp,$username,$action,$count){
+ 
+	$quer = "select max(revision) as ver from routes_edit_history where route = :var1 and city = :var2 and trans = :var3"; 
+  	$rev = DB::select( DB::raw($quer), array('var1' => $route,'var2' => $city,'var3' => $trans,));
+  	$ver = $rev[0]->ver;
+  	if($ver==null){
+  		$ver=0;
+  	}
+  	if($action!="edit"){
+  		$action="add";
+  	}
+  	$ver = $ver+1;
+  	$quer = "INSERT INTO routes_edit_history(route, city, trans, revision, action, edited_by) values(:var1 ,:var2, :var3 ,:var4, :var5 ,:var6)"; 
+  	DB::insert( DB::raw($quer), array('var1' => $route,'var2' => $city,'var3' => $trans,'var4' => $ver,'var5' => $action,'var6' => $username,));
+  	$quer = "select id  from routes_edit_history where route = :var1 and city = :var2 and trans = :var3 and revision = :var4"; 
+  	$ids = DB::select( DB::raw($quer), array('var1' => $route,'var2' => $city,'var3' => $trans,'var4' => $ver));
+  	$id = $ids[0]->id;
+  	for($i=0;$i<$count;$i++){
+		$t1 = $inp['stop_pos'.$i];
+		$t2 = $inp['stop_name'.$i];
+		$t3 = $inp['stop_lat'.$i];
+		$t4 = $inp['stop_lon'.$i];
+		$quer = "INSERT INTO routes_edit_history_help(ID,route,stop_pos, stop_name, stop_lat, stop_lon) values(:var1 ,:var2, :var3 ,:var4, :var5 ,:var6)"; 
+  		DB::insert( DB::raw($quer), array('var1' => $id,'var2' => $route,'var3' => $t1,'var4' => $t2,'var5' => $t3,'var6' => $t4,));
+	}
+	//echo '<script>window.alert("Your edit has been recorded for verification!");</script>';  	
+}
+
+
 function edit_done(){
 	$inp = Input::all();
 	$proc = $inp['proc'];
+	$username = Auth::user()->username;
 	if($proc=="info"){
 		$city = Session::get('city');
 		$trans = Session::get('trans');
@@ -198,10 +190,34 @@ function edit_done(){
 	$count = $inp['size'];
 	$route = $inp['route'];
 	$op = $inp['op'];
-	//echo $count;
-	
+	if($count>0){
+	if(Auth::user()->role!="2"){  //If not a user
 	if($op=="edit"){
 	   $this->del($table,$route);
+	}
+	if($op=="edit"){
+				$quer = "SELECT * FROM ".$city."_".$trans."_info WHERE route = :var"; 
+  	        		$created = DB::select( DB::raw($quer), array('var' => $route,));
+  	        		$created_by = $created[0]->created_by;
+	  			 //DB::statement("REPLACE INTO ".$city."_".$trans."_info(route,created_by,edited_by) values('".$route."' ,'".$created_by."' ,'".$username."')");
+	  			//$quer = "REPLACE INTO ".$city."_".$trans."_info(route,created_by,edited_by) values(:var1,:var2,:var3)";
+   				//DB::insert( DB::raw($quer), array('var1' => $route,'var2' => $created_by,'var3' => $username,));
+   				$query = "SELECT * FROM ".$city."_".$trans."_info WHERE route = :var";
+				$routes = DB::select( DB::raw($query), array('var' => $route,));
+				$quer = "REPLACE INTO ".$city."_".$trans."_info(route,views,upvotes,downvotes,created_by,verified_by,edited_by) values(:var1,:var2,:var3,:var4,:var5,:var6,:var7)";
+				DB::insert( DB::raw($quer), array('var1' => $route,'var2' => $routes[0]->views+1,'var3' => $routes[0]->upvotes,'var4' => $routes[0]->downvotes,'var5' => $created_by,'var6' => $username,'var7' => $username,));
+   				
+			}
+	else{
+				//DB::statement("INSERT INTO ".$city."_".$trans."_info(route,created_by,edited_by) values('".$route."' ,'".$username."' ,'".$username."')");
+   				$quer = "REPLACE INTO ".$city."_".$trans."_info(route,views,upvotes,downvotes,created_by,verified_by,edited_by) values(:var1,:var2,:var3,:var4,:var5,:var6,:var7)";
+				DB::insert( DB::raw($quer), array('var1' => $route,'var2' => '0','var3' => '0','var4' => '0','var5' => $username,'var6' => $username,'var7' => $username,));
+   				/*
+   				$query = "SELECT * FROM ".$city."_".$trans."_info WHERE route = :var";
+				$routes = DB::select( DB::raw($query), array('var' => $route,));
+				$quer = "REPLACE INTO ".$city."_".$trans."_info(route,views,upvotes,downvotes,created_by,verified_by,edited_by) values(:var1,:var2,:var3,:var4,:var5,:var6,:var7)";
+				DB::insert( DB::raw($quer), array('var1' => $route,'var2' => $routes[0]->views+1,'var3' => $routes[0]->upvotes,'var4' => $routes[0]->downvotes,'var5' => $username,'var6' => "na",'var7' => $username,));
+				*/
 	}
 	for($i=0;$i<$count;$i++){
 		$t1 = $inp['stop_pos'.$i];
@@ -213,17 +229,26 @@ function edit_done(){
 		$query = "SELECT stop_id FROM ".$city."_".$trans."_stop WHERE stop_name = :var"; 
   	        $stopid = DB::select( DB::raw($query), array('var' => $t2,));
   	         	        
-   		if(sizeof($stopid)!=1){
+   		if(sizeof($stopid)!=1){ //stop name exists
    			$stops_id = $price = DB::table($city."_".$trans."_stop")->max('stop_id');
  			$stops_id = $stops_id+1;
-   			DB::statement("INSERT INTO ".$city."_".$trans."_route(route,stop_id,stop_pos) values('".$route."' ,'".$stops_id."' ,'".$t1."')"); 
+   			//DB::statement("INSERT INTO ".$city."_".$trans."_route(route,stop_id,stop_pos) values('".$route."' ,'".$stops_id."' ,'".$t1."')"); 
+   			$quer = "INSERT INTO ".$city."_".$trans."_route(route,stop_id,stop_pos) values(:var1 ,:var2,'".$t1."')"; 
+  	        	DB::insert( DB::raw($quer), array('var1' => $route,'var2' => $stops_id,));
+   			
    				  				  			
-   			DB::statement("REPLACE INTO ".$city."_".$trans."_stop(stop_id,stop_name,stop_lat,stop_lon) values('".$stops_id."' ,'".$t2."' ,'".$t3."' ,'".$t4."')"); 
+   			//DB::statement("REPLACE INTO ".$city."_".$trans."_stop(stop_id,stop_name,stop_lat,stop_lon) values('".$stops_id."' ,'".$t2."' ,'".$t3."' ,'".$t4."')"); 
+   			$quer = "replace INTO ".$city."_".$trans."_stop(stop_id,stop_name,stop_lat,stop_lon) values(:var1,:var2,:var3,:var4)";
+   			DB::insert( DB::raw($quer), array('var1' => $stops_id,'var2' => $t2,'var3' => $t3,'var4' => $t4,));
    						
    		}
    		else{
-   			DB::statement("INSERT INTO ".$city."_".$trans."_route(route,stop_id,stop_pos) values('".$route."' ,'".$stopid[0]->stop_id."' ,'".$t1."')"); 
-   			DB::statement("REPLACE INTO ".$city."_".$trans."_stop(stop_id,stop_name,stop_lat,stop_lon) values('".$stopid[0]->stop_id."' ,'".$t2."' ,'".$t3."' ,'".$t4."')");
+   			//DB::statement("INSERT INTO ".$city."_".$trans."_route(route,stop_id,stop_pos) values('".$route."' ,'".$stopid[0]->stop_id."' ,'".$t1."')"); 
+   			$quer = "INSERT INTO ".$city."_".$trans."_route(route,stop_id,stop_pos) values(:var1 ,:var2,'".$t1."')"; 
+  	        	DB::insert( DB::raw($quer), array('var1' => $route,'var2' => $stopid[0]->stop_id,));
+   			//DB::statement("REPLACE INTO ".$city."_".$trans."_stop(stop_id,stop_name,stop_lat,stop_lon) values('".$stopid[0]->stop_id."' ,'".$t2."' ,'".$t3."' ,'".$t4."')");
+   			$quer = "replace INTO ".$city."_".$trans."_stop(stop_id,stop_name,stop_lat,stop_lon) values(:var1,:var2,:var3,:var4)";
+   			DB::insert( DB::raw($quer), array('var1' => $stopid[0]->stop_id,'var2' => $t2,'var3' => $t3,'var4' => $t4,));
    				
    				  						
    			}
@@ -242,7 +267,16 @@ function edit_done(){
 		return View::make('add_route');
 	}
 	}
-	
+	}
+	else{ //If user
+		$this->update_history($city,$trans,$route,$inp,$username,$op,$count);
+		return Redirect::to('mupload')->with('success', 'Your edit has been recorded for verification!');;		
+	}
+	}
+	else{
+		echo '<script>window.alert("Please add stops!");</script>';
+		return View::make('add_route');
+	}
 	
 }
 
@@ -254,6 +288,7 @@ function list_trans(){
 	$sql = "SELECT transport_corp FROM cities WHERE name =  :var  ORDER BY name";
 	if($source=='selection'){
 		Session::put('city',$search_string);
+		Session::put('selec',"");
 	}
 	else{
 		Session::put('editCity',$search_string);
@@ -262,12 +297,11 @@ function list_trans(){
 	$results = DB::select( DB::raw($sql), array('var' => $search_string,));
 	if(sizeof($results)==1 && $source=='selection'){
 		Session::put('trans',$results[0]->transport_corp);
-
 		$city = Session::get('city');
 		$trans = Session::get('trans');
 		$routes = DB::table($city.'_'.$trans.'_route')->select('route')->distinct()->get();
 		$data = array('get',$routes);
-		return View::make('map')->with('data',$data);
+		return View::make('list_route')->with('data',$data);
 	}
 	else{
 		$data = array($results,$source,$search_string);
@@ -285,18 +319,16 @@ function session_init(){
 }
 function route_init(){
 	Session::put('route',"");
+	Session::put('stops_route',"");
+	Session::put('language',"en");
 	$name = Session::get('selec');
 	if($name != ""){
 		Session::put('trans',$name);
 	}
 	$type = Session::get('type');
 	$trans = Session::get('trans');	
-	$city = Session::get('city');
+	$city = Session::get('city');	
 	
-	if($trans==""){
-		echo '<script>window.alert("Select a City or Agency!");</script>';
-		return View::make('header')->with('source','selection');
-	}
 	/*
 	if($type=='name'){
 		$city = $name;
@@ -310,9 +342,39 @@ function route_init(){
 	*/
 	//Session::put('city',$city);
 	
-	$routes = DB::table($city.'_'.$trans.'_route')->select('route')->distinct()->get();
+	if($trans==""){
+		echo '<script>window.alert("Select a City or Agency!");</script>';
+		return View::make('header')->with('source','selection');
+	}
+	$routes = DB::table($city.'_'.$trans.'_route')->select('route')->orderBy('route', 'asc')->distinct()->get();
+	$data = array('get',$routes);
+	return View::make('list_route')->with('data',$data);
+	
+	
+}
+function route_init1(){
+	Session::put('route',"");
+	Session::put('stops_route',"");
+	Session::put('language',"en");
+	$name = Session::get('selec');
+	if($name != ""){
+		Session::put('trans',$name);
+	}
+	$type = Session::get('type');
+	$trans = Session::get('trans');	
+	$city = Session::get('city');
+	if($city==""){
+		echo '<script>window.alert("Select a City or Agency!");</script>';
+		return View::make('header')->with('source','selection');
+	}		
+	if($trans==""){
+		echo '<script>window.alert("Select a City or Agency!");</script>';
+		return View::make('header')->with('source','selection');
+	}
+	$routes = DB::table($city.'_'.$trans.'_route')->select('route')->distinct()->orderBy('route', 'asc')->get();	
 	$data = array('get',$routes);
 	return View::make('map')->with('data',$data);
+	
 	
 }
 function route_finder(){
@@ -321,6 +383,13 @@ function route_finder(){
 	$route = $inp['route'];;
 	$city = Session::get('city');
 	$trans = Session::get('trans');
+	Session::put('route',$route);
+	
+	$query = "SELECT * FROM ".$city."_".$trans."_info WHERE route = :var";
+	$routes = DB::select( DB::raw($query), array('var' => $route,));
+	$quer = "REPLACE INTO ".$city."_".$trans."_info(route,views,upvotes,downvotes,created_by,verified_by,edited_by) values(:var1,:var2,:var3,:var4,:var5,:var6,:var7)";
+	DB::insert( DB::raw($quer), array('var1' => $route,'var2' => $routes[0]->views+1,'var3' => $routes[0]->upvotes,'var4' => $routes[0]->downvotes,'var5' => $routes[0]->created_by,'var6' => $routes[0]->verified_by,'var7' => $routes[0]->edited_by,));
+	
 	/*
 	$query = "SELECT DISTINCT ". $city."_stops.stop_id, ". $city."_stops.stop_name, ". $city."_stops.stop_lat, ". $city."_stops.stop_lon
   	FROM ". $city."_trips
@@ -336,8 +405,11 @@ function route_finder(){
   	$query = "select * from ".$city.'_'.$trans."_route , ".$city.'_'.$trans."_stop where route = :var and ".$city.'_'.$trans."_route.stop_id = ".$city.'_'.$trans."_stop.stop_id ORDER BY ABS(stop_pos);"; 
 
   	$stops = DB::select( DB::raw($query), array('var' => $route,));	
-  	$routes = DB::table($city.'_'.$trans.'_route')->select('route')->distinct()->get();
-  	$data = array($stops, $routes,$route);
+  	$routes_all = DB::table($city.'_'.$trans.'_route')->select('route')->distinct()->get();
+  	$query = "select * from ".$city.'_'.$trans."_info where route = :var "; 
+  	$info_all = DB::select( DB::raw($query), array('var' => $route,)); 
+  	$data = array($stops, $routes_all, $route,$info_all);
+  	//print_r($data);
   	return View::make('map')->with('data',$data);
   	
 }
@@ -362,19 +434,31 @@ function cache_geocode(){
 
 function download_route(){
     $inp = Input::all();
+    
     $route = Session::get('route');
     $city = Session::get('city');
     $trans = Session::get('trans');
     $route_mod = str_replace(array(".","/"), '-', $route);
     $name = public_path().'/'.$city.'_'.$trans.'_'.$route_mod.'.csv';
          
+    $dat = Session::get('stops_route');
     if($route!=""){
     $file = fopen($name, "w");
     $query = "select route,stop_name,stop_lat,stop_lon from ".$city.'_'.$trans.'_'."route, ".$city.'_'.$trans.'_'."stop where route = :var and ".$city.'_'.$trans.'_'."route.stop_id = ".$city.'_'.$trans.'_'."stop.stop_id ORDER BY ABS(stop_pos)";
     $data = DB::select( DB::raw($query), array('var' => $route,));
-    foreach($data as $datum){
-    	$temp = $datum->route.",".$datum->stop_name.",".$datum->stop_lat.",".$datum->stop_lon."\n" ;
-    	fwrite($file,$temp);
+    if($dat==""){
+    	foreach($data as $datum){
+    		$temp = $datum->route.",".$datum->stop_name.",".$datum->stop_lat.",".$datum->stop_lon."\n" ;
+    		fwrite($file,$temp);
+    	}
+    }
+    else{
+    	$i = 1;
+    	foreach($data as $datum){
+    		$temp = $datum->route.",".$dat[$i].",".$datum->stop_lat.",".$datum->stop_lon."\n" ;
+    		fwrite($file,$temp);
+    		$i++;
+    	}    
     }
     
     header('Content-Description: File Transfer');
@@ -393,7 +477,7 @@ function download_route(){
     	echo '<script>window.alert("Please select a route!");</script>';
     	return $this->route_init();
     }
-    
+   
 
 }
 
@@ -434,19 +518,27 @@ function send_data($city,$trans,$route){
 
 }
 
+
+//getting data from the mobile
 function get_data(){
 	 $inp = Input::all();
 	 $city = $inp['city'];
 	 $trans  = $inp['corp'];
 	 $route  = $inp['route'];
+	 $username = $inp['username'];
+	 $op = "edit";
 	 $stop_list = json_decode($inp['stopList'],true);
 	 $lat_list = json_decode($inp['latList'],true);
 	 $lon_list = json_decode($inp['lonList'],true);
-	 DB::statement("INSERT INTO test(city,route) values('$city','$route')");	 
+	 
+	 $this->update_history($city,$trans,$route,$inp,$username,$op,$count);	
+	 //DB::statement("INSERT INTO test(city,route) values('$city','$route')");	
+	 DB::insert( DB::raw("INSERT INTO test(city,route) values(:var0,:var1)"), array('var0' => $city,'var1' => $trans,)); 
 	 $quer = "select * from cities where name = :var0 and transport_corp = :var1";
 	 $result = DB::select( DB::raw($quer), array('var0' => $city,'var1' => $trans,));
 	 if(sizeof($result)!=1){
-	 	DB::statement("INSERT INTO cities(name,transport_corp) values('$city','$trans')");
+	 	//DB::statement("INSERT INTO cities(name,transport_corp) values('$city','$trans')");
+	 	DB::insert( DB::raw("INSERT INTO test(city,route) values(:var0,:var1)"), array('var0' => $city,'var1' => $trans,)); 
 		$create  = "create table ".$city.'_'.$trans."_stop(stop_id INT, stop_name varchar(500), stop_lat varchar(500), stop_lon varchar(500))";
 		DB::statement($create);
 		$create  = "create table ".$city.'_'.$trans."_route(route varchar(500), stop_id INT, stop_pos varchar(500))";
@@ -457,9 +549,19 @@ function get_data(){
 	 }
 	 $count  = sizeof($stop_list);
 	 $table = $city."_".$trans."_route";
-	 $this->del($table,$route);
+	 //$this->del($table,$route);
+	 $input = array();
 	 for($i=0;$i<$count;$i++){
-		$t1 = $i;
+	 	$input['stop_pos'.$i] = $i+1;
+		$input['stop_name'.$i] = $stop_list[$i];
+		$input['stop_lat'.$i] = $lat_list[$i];
+		$input['stop_lon'.$i] = $lon_list[$i];
+		
+	 }
+	 $this->update_history($city,$trans,$route,$input,$username,$op,$count);
+	 
+	 for($i=0;$i<$count;$i++){
+		$t1 = $i+1;
 		$t2 = $stop_list[$i];
 		$t3 = $lat_list[$i];
 		$t4 = $lon_list[$i];
@@ -470,24 +572,45 @@ function get_data(){
    		if(sizeof($stopid)!=1){
    			$stops_id =  DB::table($city."_".$trans."_stop")->max('stop_id');
  			$stops_id = $stops_id+1;
-   			DB::statement("INSERT INTO ".$city."_".$trans."_route(route,stop_id,stop_pos) values('".$route."' ,'".$stops_id."' ,'".$t1."')"); 
-   				  				  			
-   			DB::statement("REPLACE INTO ".$city."_".$trans."_stop(stop_id,stop_name,stop_lat,stop_lon) values('".$stops_id."' ,'".$t2."' ,'".$t3."' ,'".$t4."')"); 
+   			//DB::statement("INSERT INTO ".$city."_".$trans."_route(route,stop_id,stop_pos) values('".$route."' ,'".$stops_id."' ,'".$t1."')"); 
+   			$quer = "INSERT INTO ".$city."_".$trans."_route(route,stop_id,stop_pos) values(:var1 ,:var2,'".$t1."')"; 
+  	        	DB::insert( DB::raw($quer), array('var1' => $route,'var2' => $stops_id,));
+   			//DB::statement("INSERT INTO ".$city."_".$trans."_info(route,created_by,edited_by) values('".$route."' ,'".$username."' ,'".$username."')");  
+   			//$quer = "REPLACE INTO ".$city."_".$trans."_info(route,edited_by) values(:var1,:var3)";
+   			//DB::insert( DB::raw($quer), array('var1' => $route,'var3' => $username,));			
+   			$query = "SELECT * FROM ".$city."_".$trans."_info WHERE route = :var";
+			$routes = DB::select( DB::raw($query), array('var' => $route,));
+			$quer = "REPLACE INTO ".$city."_".$trans."_info(route,views,upvotes,downvotes,created_by,verified_by,edited_by) values(:var1,:var2,:var3,:var4,:var5,:var6,:var7)";
+			DB::insert( DB::raw($quer), array('var1' => $route,'var2' => $routes[0]->views+1,'var3' => $routes[0]->upvotes,'var4' => $routes[0]->downvotes,'var5' => $routes[0]->created_by,'var6' => "na",'var7' => $username,));			
+   			//DB::statement("REPLACE INTO ".$city."_".$trans."_stop(stop_id,stop_name,stop_lat,stop_lon) values('".$stops_id."' ,'".$t2."' ,'".$t3."' ,'".$t4."')"); 
+   			$quer = "replace INTO ".$city."_".$trans."_stop(stop_id,stop_name,stop_lat,stop_lon) values(:var1,:var2,:var3,:var4)";
+   			DB::insert( DB::raw($quer), array('var1' => $stops_id,'var2' => $t2,'var3' => $t3,'var4' => $t4,));
 
    						
    		}
    		else{
-   			$query = "INSERT INTO ".$city."_".$trans."_route(route,stop_id,stop_pos) values('".$route."' ,'".$stopid[0]->stop_id."' ,'".$t1."')";
-   			DB::statement($query); 
-   			DB::statement("REPLACE INTO ".$city."_".$trans."_stop(stop_id,stop_name,stop_lat,stop_lon) values('".$stopid[0]->stop_id."' ,'".$t2."' ,'".$t3."' ,'".$t4."')");
+   			//$query = "INSERT INTO ".$city."_".$trans."_route(route,stop_id,stop_pos) values('".$route."' ,'".$stopid[0]->stop_id."' ,'".$t1."')";
+   			//DB::statement($query); 
+   			$quer = "INSERT INTO ".$city."_".$trans."_route(route,stop_id,stop_pos) values(:var1 ,:var2,'".$t1."')"; 
+  	        	DB::insert( DB::raw($quer), array('var1' => $route,'var2' => $stopid[0]->stop_id,));
+   			//DB::statement("INSERT INTO ".$city."_".$trans."_info(route,created_by,edited_by) values('".$route."' ,'".$username."' ,'".$username."')");
+   			//$quer = "REPLACE INTO ".$city."_".$trans."_info(route,created_by,edited_by) values(:var1,:var3)";
+   			//DB::insert( DB::raw($quer), array('var1' => $route,'var2' => $username,'var3' => $username,));		
+   			
+   			$query = "SELECT * FROM ".$city."_".$trans."_info WHERE route = :var";
+			$routes = DB::select( DB::raw($query), array('var' => $route,));
+			$quer = "REPLACE INTO ".$city."_".$trans."_info(route,views,upvotes,downvotes,created_by,verified_by,edited_by) values(:var1,:var2,:var3,:var4,:var5,:var6,:var7)";
+			DB::insert( DB::raw($quer), array('var1' => $route,'var2' => $routes[0]->views+1,'var3' => $routes[0]->upvotes,'var4' => $routes[0]->downvotes,'var5' => $username,'var6' => "na",'var7' => $username,));							
+   			
+   			//DB::statement("REPLACE INTO ".$city."_".$trans."_stop(stop_id,stop_name,stop_lat,stop_lon) values('".$stopid[0]->stop_id."' ,'".$t2."' ,'".$t3."' ,'".$t4."')");
+   			$quer = "replace INTO ".$city."_".$trans."_stop(stop_id,stop_name,stop_lat,stop_lon) values(:var1,:var2,:var3,:var4)";
+   			DB::insert( DB::raw($quer), array('var1' => $stopid[0]->stop_id,'var2' => $t2,'var3' => $t3,'var4' => $t4,));
+   			
 
    				
    				  						
    			}
 	}
-	
-	
-	 //print_r($city.','.$route);
 }
 
 function edit_curr_route(){

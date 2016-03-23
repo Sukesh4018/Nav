@@ -1,7 +1,7 @@
  @include('up')
     <title>Transport Corporations</title>
-        <div id="nav" class="btn-group"></div>
-     <div id="section"> 	
+
+     <div id="section" style="margin-left:40px;"> 	
     
  <style>
 p {
@@ -23,8 +23,8 @@ else{
 	echo Form::hidden('source', $source);
 	foreach($result as $row){
 		echo Form::hidden('type', 'trans');
-		echo Form::radio('selec', $row->transport_corp);
-		echo '<p style="font-size:24px;display: inline;">  '.Form::label($row->transport_corp). '</p></br>';
+		echo '<label>'.Form::radio('selec', $row->transport_corp).' <p style="font-size:24px;display: inline;">'.$row->transport_corp.'</p></label><br>';
+		//echo '<p style="font-size:24px;display: inline;">  '.Form::label($row->transport_corp). '</p></br>';
 	
 	}
 	echo  '</br>'.'</br>' ;

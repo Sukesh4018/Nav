@@ -1,7 +1,7 @@
  @include('up')
     <title>Results</title>
       
-    <div id="nav" class="btn-group"></div>
+   <div id="nav" class="btn-group"></div>
   
 <?php
 
