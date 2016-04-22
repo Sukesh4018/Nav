@@ -59,7 +59,7 @@ p.uppercase {
 	
 		//var newdiv = document.createElement('div');
 		//newdiv.innerHTML
-		
+		flag = true;
 		var route_entered = document.getElementById('route').value;
 		var routes = <?php echo json_encode($city_data)?>;
 		for(var m in routes) {

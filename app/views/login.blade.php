@@ -110,7 +110,7 @@ body {
 <body>
 
 <div class="login-page">
-<h1 style = "color:#FFFFFF;font-size:36px;"> Bus Route Portal </h1>
+<h1 style = "color:#3d3e36;font-size:36px;"> Bus Route Portal </h1>
   <div class="form">
     {{ Form::open(array('url'=>'login','class' => 'login-form')) }}
     @if(Session::has('error'))

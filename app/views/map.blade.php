@@ -63,12 +63,17 @@ if(is_array($data)){
 
 {{ Form::close() }}
 
-<p style="font-size:24px;display: inline; margin-left:100px;float:left;"><nobr><?php if(is_array($data)){if(sizeof($data)==4){Session::put('route',$data[2]);echo '<br>Route:  "'.$data[2].'"</nobr>';
+<p style="font-size:24px;display: inline; margin-left:100px;float:left;"><nobr>
+<?php 
+if(is_array($data)){if(sizeof($data)==4){Session::put('route',$data[2]);
+echo '<a style="color: #000000;"data-toggle="modal" data-target="#route_modal" href="#">Route:  " '.$data[2].'"</a>';
 $info = $data[3];
-echo '&nbsp&nbsp<button id = "upvote" type="button" class="btn btn-default btn-sm " >Correct</button> '.$info[0]->upvotes." ";
-echo '<button id = "downvote" type="button" class="btn btn-primary btn-sm " >Incorrect</button> '.$info[0]->downvotes." </p>";
-}} ?>
-	
+echo '&nbsp&nbsp<div style="display: inline;"><button id = "upvote" type="button" class="btn btn-default btn-sm style="display: inline;"  " >Correct</button> &nbsp<p id = "upvote_text" style="display: inline;">'.$info[0]->upvotes." </p>&nbsp&nbsp";
+echo '<button id = "downvote" type="button" class="btn btn-primary btn-sm " >Incorrect</button>&nbsp <p id = "downvote_text" style="display: inline;">'.$info[0]->downvotes."</p> </div>";
+}
+} 
+?>
+</nobr></p>
 </div>
 
 <!-- Modal -->
@@ -108,7 +113,39 @@ echo '<button id = "downvote" type="button" class="btn btn-primary btn-sm " >Inc
         <h4 class="modal-title" id = "stop_heading">Routes through Stop</h4>
       </div>
       <div class="modal-body" id = "stop-info">
-      <? php echo Session::get('route'); ?>
+      <?php echo Session::get('route'); ?>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal -->
+<div id="route_modal" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title" ><?php echo Session::get('route'); ?></h4>
+      </div>
+      <div class="modal-body" >
+      <?php
+      if(isset($current_route)){
+      		$data_of_route = DB::table($city.'_'.$trans.'_info')->where('route','=',$current_route)->get();
+      		if(sizeof($data_of_route)>0){
+      			echo '<div>';
+			echo "Total Views : ".$data_of_route[0]->views.'</br>';
+			echo "Created by : ".$data_of_route[0]->created_by.'</br>';
+			echo "Edited by : ".$data_of_route[0]->edited_by.'</br>';
+			echo "Verified by : ".$data_of_route[0]->verified_by.'</br>';
+			echo '</div>';
+		}
+	}
+      ?>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
@@ -121,17 +158,23 @@ echo '<button id = "downvote" type="button" class="btn btn-primary btn-sm " >Inc
 
 <div id="nav" class="btn-group">
 	<button id = "stops" type="button" class="btn btn-primary btn-lg btn-block" >Stops</button><br><br>
+	<label for="stops" class="hidden">Get the stops in the route</label>
   	<button id = "map" type="button" class="btn btn-primary btn-lg btn-block" >Map</button><br><br>
+  	<label for="map" class="hidden">Plot the stops on a map</label>
   	{{ Form::open(array('url'=>'edit_this_route','method' => 'GET')) }}
-		{{ Form::submit('Edit Route',['class' =>'btn btn-primary btn-block btn-lg ']) }}
+		{{ Form::submit('Edit Route',['class' =>'btn btn-primary btn-block btn-lg ','id' => 'edit_this_route_button']) }}
 	{{ Form::close() }}
+	<label for="edit_this_route_button" class="hidden">Edit the route</label>
   	{{ Form::open(array('url'=>'download_route','method' => 'GET')) }}
-		{{ Form::submit('Download',['class' =>'btn btn-primary btn-block btn-lg ']) }}
+		{{ Form::submit('Download',['class' =>'btn btn-primary btn-block btn-lg ','id' => 'Download_the_route']) }}
 	{{ Form::close() }}
-	<button type="button" class="btn btn-primary btn-lg btn-block" data-toggle="modal" data-target="#myModal">Transliterate</button><br><br>
+	<label for="Download_the_route" class="hidden">Download the current route</label>
+	<button id = "transliterate_button" type="button" class="btn btn-primary btn-lg btn-block" data-toggle="modal" data-target="#myModal">Transliterate</button><br><br>
+	<label for="transliterate_button" class="hidden">Click to select the language</label>
 	{{ Form::open(array('url'=>'list_route','method' => 'GET')) }}
-		{{ Form::submit('All Routes',['class' =>'btn btn-primary btn-block btn-lg ']) }}
+		{{ Form::submit('All Routes',['class' =>'btn btn-primary btn-block btn-lg ','id' => 'list_all_routes_button']) }}
 	{{ Form::close() }}
+	<label for="list_all_routes_button" class="hidden">Click to display all the routes</label>
 </div>
 
 <div class="container-fluid" align="left" style="width:899px; height:540px;">
@@ -255,6 +298,9 @@ function tableText(tableCell) {
   
 
 $('#upvote').on('click', function (e) {
+var val_text = document.getElementById("upvote_text").innerHTML;
+var val =  parseInt(val_text);
+document.getElementById("upvote_text").innerHTML = val+1;
 var url = "<?php echo Request::root(); ?>/upvote_route";
 request = $.ajax({
         url: url,
@@ -274,11 +320,15 @@ request = $.ajax({
    });
    
 $('#downvote').on('click', function (e) {
+var val_text = document.getElementById("downvote_text").innerHTML;
+var val =  parseInt(val_text);
+document.getElementById("downvote_text").innerHTML = val+1;
 var url = "<?php echo Request::root(); ?>/downvote_route";
 request = $.ajax({
         url: url,
         method:'post',
         cache:false,
+        data: {"city":city,"trans":trans,"route":current_route},
         success:function(data){
           //alert('success');
           console.log('sucess');
@@ -296,11 +346,12 @@ request = $.ajax({
        }
    });
    });
-   
+    
 $(document).on('click','.stoplinks',function() {
   var url = "<?php echo Request::root(); ?>/stop_info/";
   var stop_name = $(this).text();
-  var txt = $(this).data('datac'); 
+  var txt = $(this).data('datac');
+  txt = txt.replace("/","$**$");
   url = url+txt;
   console.log(txt);
   request = $.ajax({

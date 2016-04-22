@@ -17,12 +17,22 @@ Route::get('/', function()
 });
 Route::get('upload', array('before' => 'auth', function()
 {
-	return View::make('static_uploadzip');
+	if(Auth::user()->role!="2"){
+		return View::make('static_uploadzip');
+	}
+	else{
+		return Redirect::to('mupload');
+	}
 }));
 
 Route::get('upload_file', array('before' => 'auth',function()
 {
-	return View::make('upload_file');
+	if(Auth::user()->role!="2"){
+		return View::make('upload_file');
+	}
+	else{
+		return Redirect::to('mupload');;
+	}
 }));
 
 Route::get('get_search', array('before' => 'auth', function()
@@ -47,7 +57,12 @@ Route::get('add_agen', array('before' => 'auth', function()
 
 Route::get('successful_register', function()
 {
-	return View::make('successful_register');
+	if(Auth::user()->role!="2"){
+		return View::make('add_agency')->with('source','mupload');
+	}
+	else{
+		 return Redirect::to('mupload');
+	}
 });
 
 
@@ -162,7 +177,12 @@ Route::post('delete_route',  array('before' => 'auth','uses' =>'AuxController@de
 Route::get('delete_route', array('before' => 'auth', function()
 {
 	if(Auth::user()->role!="2"){
-		return View::make('delete_route');
+		if(Session::get('editTrans') != ""){
+			return View::make('delete_route');
+		}
+		else{
+			return View::make('header')->with('source','mupload');
+		}
 	}
 	else{
 		return "you are not the admin/volunteer. Please return to the portal by clicking <a href='get_search'>here</a>";

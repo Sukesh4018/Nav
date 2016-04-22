@@ -269,6 +269,7 @@ function delete_route(){
 }
 
 function stop_info($stop){
+	$stop = str_replace("$**$","/",$stop);
 	$city = Session::get('city');
 	$trans = Session::get('trans');
 	$data = DB::table($city.'_'.$trans.'_stop')->where('stop_name','=', $stop)->get();
