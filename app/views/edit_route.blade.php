@@ -57,7 +57,7 @@ p.uppercase {
 
 <div  class="btn-group">
  {{ Form::open(array('url'=>'get_search','method' => 'GET','class'=>'navbar-form navbar-left')) }}
-	{{ Form::submit('Change Agency',['class' =>'btn btn-success btn-block btn-lg']) }}
+	{{ Form::submit('Change City',['class' =>'btn btn-default btn-block btn-lg']) }}
 {{ Form::close() }}
  
  {{ Form::open(array('url'=>'main','method' => 'GET','class'=>'navbar-form navbar-left')) }}

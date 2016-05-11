@@ -223,7 +223,12 @@ function transliterate($lang){
 	$input = $route.$stop_names;
 	$city = Session::get('city');
 	$trans = Session::get('trans');
-	$user =  Auth::user()->username;
+	if (Auth::check()){
+		$user =  Auth::user()->username;
+	}
+	else{
+		$user = "".rand(10,100);	
+	}
 	$file = public_path()."/".rand(10,100000).$city.$trans.$user.".txt";
 	$command = 'java -jar transl.jar "'.$tranl.'" "'.$input.'" "'.$file.'"' ;
 	//echo $command.'<br>';

@@ -85,7 +85,7 @@ function addroute_help(){
 	if($city!=""){
 	Session::put('editTrans',$trans);
 	if($trans==""){
-	
+	if($inp!=null){
 	$name = $inp['selec'];
 	$type = $inp['type'];
 	if($type=='name'){
@@ -97,9 +97,16 @@ function addroute_help(){
 		$city = $result[0]->name;
 		Session::put('editTrans',$name);
 	}
+	return View::make('add_route')->with('city',$city);
 	}
-	
-	return View::make('add_route')->with('city',$city);	
+	else{
+		return View::make('header')->with('source','add_route');
+	}
+	}
+	else{
+		return View::make('add_route')->with('city',$city);
+	}
+		
 	}
 	else{
 		if($inp==null){
@@ -383,20 +390,13 @@ function route_finder(){
 	$route = $inp['route'];;
 	$city = Session::get('city');
 	$trans = Session::get('trans');
-	Session::put('route',$route);
-	
 	$query = "SELECT * FROM ".$city."_".$trans."_info WHERE route = :var";
 	$routes = DB::select( DB::raw($query), array('var' => $route,));
+	if(sizeof($routes)==1){
+	Session::put('route',$route);
 	$quer = "REPLACE INTO ".$city."_".$trans."_info(route,views,upvotes,downvotes,created_by,verified_by,edited_by) values(:var1,:var2,:var3,:var4,:var5,:var6,:var7)";
 	DB::insert( DB::raw($quer), array('var1' => $route,'var2' => $routes[0]->views+1,'var3' => $routes[0]->upvotes,'var4' => $routes[0]->downvotes,'var5' => $routes[0]->created_by,'var6' => $routes[0]->verified_by,'var7' => $routes[0]->edited_by,));
 	
-	/*
-	$query = "SELECT DISTINCT ". $city."_stops.stop_id, ". $city."_stops.stop_name, ". $city."_stops.stop_lat, ". $city."_stops.stop_lon
-  	FROM ". $city."_trips
-  	INNER JOIN ". $city."_stop_times ON ". $city."_stop_times.trip_id = ". $city."_trips.trip_id
-  	INNER JOIN ". $city."_stops ON ". $city."_stops.stop_id = ". $city."_stop_times.stop_id
-  	WHERE route_id = :var";
-  	*/
   	
   	//$query = "select * from ".$city.'_'.$trans."_data where route = :var  ORDER BY ABS(stop_pos);"; 
 
@@ -411,7 +411,11 @@ function route_finder(){
   	$data = array($stops, $routes_all, $route,$info_all);
   	//print_r($data);
   	return View::make('map')->with('data',$data);
-  	
+
+  	}
+  	else{
+  		echo "The given route doesn't exist!!! Go <a href='main'> back</a>";
+  	}
 }
 
 

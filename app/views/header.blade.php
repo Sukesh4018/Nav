@@ -10,6 +10,8 @@
 	if(Session::has('success')){
 		$messg = Session::get('success');
 	}
+	if($source == 'selection'){Session::put('trans',"");Session::put('city',"");}
+	else{Session::put('editTrans',"");Session::put('editCity',"");}
  ?>
  <style>
  	 #city td:hover{color:#1E90FF;}
@@ -29,9 +31,7 @@
 <div style="width: 100%;" >
     {{ Form::open(array('url'=>'list_trans','method' => 'POST')) }}
 	<input type="hidden" name="search" value= "city" /> 
-	<input type="hidden" name="source" value= <?php echo $source; 
-	if($source == 'selection'){Session::put('trans',"");Session::put('city',"");}
-	else{Session::put('editTrans',"");Session::put('editCity',"");}?> /> 
+	<input type="hidden" name="source" value= <?php echo $source; ?> /> 
     <div id="section" style="margin-left:40px;" > 	
     <h1><u> Select the city </u></h1>
         <label class="hidden" for="search">Search City</label>

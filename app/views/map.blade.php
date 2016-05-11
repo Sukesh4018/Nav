@@ -68,7 +68,7 @@ if(is_array($data)){
 if(is_array($data)){if(sizeof($data)==4){Session::put('route',$data[2]);
 echo '<a style="color: #000000;"data-toggle="modal" data-target="#route_modal" href="#">Route:  " '.$data[2].'"</a>';
 $info = $data[3];
-echo '&nbsp&nbsp<div style="display: inline;"><button id = "upvote" type="button" class="btn btn-default btn-sm style="display: inline;"  " >Correct</button> &nbsp<p id = "upvote_text" style="display: inline;">'.$info[0]->upvotes." </p>&nbsp&nbsp";
+echo '&nbsp&nbsp<div style="display: inline;"><p style="display: inline; color:green;font-size:20px;">Feedback: &nbsp</p><button id = "upvote" type="button" class="btn btn-default btn-sm style="display: inline;"  " >Correct</button> &nbsp<p id = "upvote_text" style="display: inline;">'.$info[0]->upvotes." </p>&nbsp&nbsp";
 echo '<button id = "downvote" type="button" class="btn btn-primary btn-sm " >Incorrect</button>&nbsp <p id = "downvote_text" style="display: inline;">'.$info[0]->downvotes."</p> </div>";
 }
 } 
@@ -113,7 +113,7 @@ echo '<button id = "downvote" type="button" class="btn btn-primary btn-sm " >Inc
         <h4 class="modal-title" id = "stop_heading">Routes through Stop</h4>
       </div>
       <div class="modal-body" id = "stop-info">
-      <?php echo Session::get('route'); ?>
+      <?php echo Session::get('route'); ?>    
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
@@ -161,10 +161,7 @@ echo '<button id = "downvote" type="button" class="btn btn-primary btn-sm " >Inc
 	<label for="stops" class="hidden">Get the stops in the route</label>
   	<button id = "map" type="button" class="btn btn-primary btn-lg btn-block" >Map</button><br><br>
   	<label for="map" class="hidden">Plot the stops on a map</label>
-  	{{ Form::open(array('url'=>'edit_this_route','method' => 'GET')) }}
-		{{ Form::submit('Edit Route',['class' =>'btn btn-primary btn-block btn-lg ','id' => 'edit_this_route_button']) }}
-	{{ Form::close() }}
-	<label for="edit_this_route_button" class="hidden">Edit the route</label>
+  	
   	{{ Form::open(array('url'=>'download_route','method' => 'GET')) }}
 		{{ Form::submit('Download',['class' =>'btn btn-primary btn-block btn-lg ','id' => 'Download_the_route']) }}
 	{{ Form::close() }}
@@ -175,6 +172,14 @@ echo '<button id = "downvote" type="button" class="btn btn-primary btn-sm " >Inc
 		{{ Form::submit('All Routes',['class' =>'btn btn-primary btn-block btn-lg ','id' => 'list_all_routes_button']) }}
 	{{ Form::close() }}
 	<label for="list_all_routes_button" class="hidden">Click to display all the routes</label>
+	<?php
+	if (Auth::check()){
+	echo Form::open(array('url'=>'edit_this_route','method' => 'GET')) ;
+		echo Form::submit('Edit Route',['class' =>'btn btn-primary btn-block btn-lg ','id' => 'edit_this_route_button']) ;
+	echo Form::close() ;
+	echo '<label for="edit_this_route_button" class="hidden">Edit the current route</label>';
+	}
+	?>
 </div>
 
 <div class="container-fluid" align="left" style="width:899px; height:540px;">

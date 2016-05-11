@@ -35,7 +35,7 @@ Route::get('upload_file', array('before' => 'auth',function()
 	}
 }));
 
-Route::get('get_search', array('before' => 'auth', function()
+Route::get('get_search', array(function()
 {
 	return View::make('header')->with('source','selection');
 }));
@@ -71,7 +71,7 @@ Route::get('change_pwd',  array('before' => 'auth',  function()
 	return View::make('change_pwd');
 }));
 
-Route::get('list_route',  array('before' => 'auth',   function()
+Route::get('list_route',  array(function()
 {
 	$city = Session::get('city');
  	$trans = Session::get('trans'); 
@@ -213,17 +213,17 @@ Route::get('edit_done',array('before' => 'auth',function(){
  return Redirect::to('mupload');
 }));
 
-Route::get('transl/{name}', array('before' => 'auth','uses' =>'AuxController@transliterate'));
-Route::get('stop_info/{name}', array('before' => 'auth','uses' =>'AuxController@stop_info'));
+Route::get('transl/{name}', array('uses' =>'AuxController@transliterate'));
+Route::get('stop_info/{name}', array('uses' =>'AuxController@stop_info'));
 
 Route::post('geocode_data', array('before' => 'auth','uses' =>'HeadController@cache_geocode'));
-Route::get('download_route', array('before' => 'auth','uses' =>'HeadController@download_route'));
+Route::get('download_route', array('uses' =>'HeadController@download_route'));
 Route::get('edit_this_route', array('before' => 'auth','uses' =>'HeadController@edit_curr_route'));
-Route::post('main', array('before' => 'auth','uses' =>'HeadController@route_finder'));
-Route::get('main', array('before' => 'auth','uses' =>'HeadController@route_init1'));
+Route::post('main', array('uses' =>'HeadController@route_finder'));
+Route::get('main', array('uses' =>'HeadController@route_init1'));
 Route::post('header', array('before' => 'auth','uses' =>'HeadController@header_proc'));
-Route::post('selection', array('before' => 'auth','uses' =>'HeadController@session_init'));
-Route::get('selection', array('before' => 'auth','uses' =>'HeadController@route_init'));
+Route::post('selection', array('uses' =>'HeadController@session_init'));
+Route::get('selection', array('uses' =>'HeadController@route_init'));
 Route::get('edit_help', array('before' => 'auth','uses' =>'HeadController@manual_upload'));
 Route::post('edit_help', array('before' => 'auth','uses' =>'HeadController@edit_helper'));
 Route::post('edit_done', array('before' => 'auth','uses' =>'HeadController@edit_done'));
@@ -233,13 +233,13 @@ Route::get('mupload', array('before' => 'auth','uses' =>'HeadController@manual_u
 Route::post('mupload', array('before' => 'auth','uses' =>'HeadController@manual_upload'));
 Route::post('upload_zip', array('before' => 'auth','uses' =>'BaseController@upload_and_extract'));
 Route::post('upload_file', array('before' => 'auth','uses' =>'BaseController@file_upload'));
-Route::post('list_trans', array('before' => 'auth','uses' =>'HeadController@list_trans'));
-Route::get('list_trans', array('before' => 'auth','uses' =>'HeadController@route_init'));
+Route::post('list_trans', array('uses' =>'HeadController@list_trans'));
+Route::get('list_trans', array('uses' =>'HeadController@route_init'));
 Route::post('add_agen', array('before' => 'auth','uses' =>'HeadController@add_agency'));
-Route::get('download_app', array('before' => 'auth','uses' =>'HeadController@download_app'));
+Route::get('download_app', array('uses' =>'HeadController@download_app'));
 
-Route::post('upvote_route', array('before' => 'auth','uses' =>'AuxController@upvote_route'));
-Route::post('downvote_route', array('before' => 'auth','uses' =>'AuxController@downvote_route'));
+Route::post('upvote_route', array('uses' =>'AuxController@upvote_route'));
+Route::post('downvote_route', array('uses' =>'AuxController@downvote_route'));
 
 Route::post('accept_volunteer', array('before' => 'auth','uses' =>'AuxController@accept_volunteer'));
 Route::post('reject_volunteer', array('before' => 'auth','uses' =>'AuxController@reject_volunteer'));

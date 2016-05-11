@@ -71,25 +71,34 @@ p.uppercase {
 echo  Session::get('city').', '.Session::get('trans');
 }?></p> 
   <div  class="btn-group">
- {{ Form::open(array('url'=>'get_search','method' => 'GET','class'=>'navbar-form navbar-left')) }}
-	{{ Form::submit('Change',['class' =>'btn btn-success btn-block btn-lg']) }}
-{{ Form::close() }}
+  <?php
+if(Session::get('trans')!=''){
+ echo Form::open(array('url'=>'get_search','method' => 'GET','class'=>'navbar-form navbar-left')) ;
+	echo Form::submit('Change City',['class' =>'btn btn-default btn-block btn-lg']) ;
+echo Form::close() ;
+}
+?>
 
 {{ Form::open(array('url'=>'main','method' => 'GET','class'=>'navbar-form navbar-left')) }}
 		{{ Form::submit('Info',['class' =>'btn btn-success btn-block btn-lg ']) }}
 {{ Form::close() }} 
- {{ Form::open(array('url'=>'upload','method' => 'GET','class'=>'navbar-form navbar-left')) }}
-		{{ Form::submit('Add Data',['class' =>'btn btn-success btn-block btn-lg ']) }}
-{{ Form::close() }}
+<?php
+if (Auth::check()){
+ echo Form::open(array('url'=>'upload','method' => 'GET','class'=>'navbar-form navbar-left')) ;
+		echo Form::submit('Add Data',['class' =>'btn btn-success btn-block btn-lg ']) ;
+echo Form::close() ;
+}
+?>
   </div>
 
-<div class="dropdown" style ="float:right;margin-top:15px;margin-right:80px;"; >
-  <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-        <?php echo Session::get('user'); ?>  
-    <span class="caret"></span>
+<?php 
+if (Auth::check()){
+	echo  '<div class="dropdown" style ="float:right;margin-top:15px;margin-right:80px;"; >
+  <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">'
+    .Session::get('user'). 
+  '<span class="caret"></span>
   </button>
-  <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
-  <?php 
+  <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">';
   if(Auth::user()->role=="1"){
   	echo '<li><a href="volunteer_view">Volunteer Ops</a></li>';
   	}
@@ -99,13 +108,19 @@ echo  Session::get('city').', '.Session::get('trans');
   else {
   	echo '<li><a href="admin_view">Admin Ops</a></li>';
   }
-  ?>
-    
-    <li><a href="change_pwd">Change Password</a></li>
-    <li role="separator" class="divider"></li>
+  echo '<li><a href="change_pwd">Change Password</a></li>';
+  echo '<li role="separator" class="divider"></li>
     <li><a href="logout">Logout</a></li>
   </ul>
-</div>
+</div>';
+}
+else{
+
+	echo Form::open(array('url'=>'get_change','method' => 'GET','class'=>'navbar-form','style' => 'float:right;margin-top:15px;margin-right:80px;'));
+		echo Form::submit('Login',['class' =>'btn btn-default btn-block btn-md']);
+	echo Form::close() ;
+}
+  ?>
 
 <a class="navbar-brand" rel="home" href="download_app" title="Download Android App" style="float:right;">
         <img style="max-width:120px; margin-top: -5px; "
