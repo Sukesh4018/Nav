@@ -1,7 +1,10 @@
 <?php
-
+/*
+This Controller contains functions which mostly deal with displaying the data and other functionality
+*/
 class HeadController extends Controller {
 
+//Retrieves all the cities names available and sends them to the view 'header_view'
 function header_proc(){
 	$inp = Input::all();
 	$search = $inp['search'];
@@ -15,13 +18,13 @@ function header_proc(){
 		$sql = "SELECT transport_corp FROM cities WHERE transport_corp LIKE  :var  ORDER BY transport_corp";
 	}
 	*/
-	$sql = "SELECT distinct * FROM cities WHERE name LIKE  :var  group BY name";
+	$sql = "SELECT distinct * FROM cities WHERE name LIKE  :var  group BY name"; //Get all the city names
 	$results = DB::select( DB::raw($sql), array('var' => '%'.$search_string.'%',));
 	$data = array($search,$results,$source);
 	return View::make('header_view')->with('data', $data);
 }
 
-
+//Displays the 'manual_upload' view with the given city and transport corporation
 function manual_upload(){
 	$inp = Input::all();
 	$city = Session::get('editCity');
@@ -36,14 +39,14 @@ function manual_upload(){
 		$city = $name;
 	}
 	else{
-		$sql = "SELECT name FROM cities WHERE transport_corp = :var";
+		$sql = "SELECT name FROM cities WHERE transport_corp = :var"; //Get the corresponding transport corporation
 		$result = DB::select( DB::raw($sql), array('var' => $name,));
 		$city = $result[0]->name;
 		Session::put('editTrans',$name);
 	}
 	
 	}
-	return View::make('manual_upload')->with('city',$city);	
+	return View::make('manual_upload')->with('city',$city);	 
 	}
 	else{
 		if($inp==null){
@@ -53,6 +56,7 @@ function manual_upload(){
 	
 }
 
+//Add a new agency in a city
 function add_agency(){
 	$inp = Input::all();
 	$city = $inp['city'];
@@ -60,9 +64,11 @@ function add_agency(){
 	$city = strtolower($city);
 	$trans = strtolower($trans);
 	//DB::table('cities')->insert(['name' => $city, 'transport_corp' => $trans]);
-	DB::statement("REPLACE INTO cities(name,transport_corp) values('".$city."','".$trans."')");
+	DB::statement("REPLACE INTO cities(name,transport_corp) values('".$city."','".$trans."')"); 
 	//$create  = "create table ".$city.'_'.$trans."_data(route varchar(500), stop_name varchar(500), stop_pos varchar(500), stop_lat varchar(500), stop_lon varchar(500))";
 	//DB::statement($create);
+	
+	//Create the necessary tables
 	$create  = "create table ".$city.'_'.$trans."_stop(stop_id INT, stop_name varchar(500), stop_lat varchar(500), stop_lon varchar(500))";
 	DB::statement($create);
 	$create  = "create table ".$city.'_'.$trans."_route(route varchar(500), stop_id INT, stop_pos varchar(500))";
@@ -78,6 +84,8 @@ function add_agency(){
 	return View::make('add_route')->with('city',$city);
 }
 
+
+//Assists in adding route 
 function addroute_help(){
 	$inp = Input::all();
 	$city = Session::get('editCity');
@@ -116,7 +124,7 @@ function addroute_help(){
 	
 }
 
-
+//Retrieves route information for editing the route
 function edit_helper(){
 	
 	$inp = Input::all();
@@ -133,7 +141,7 @@ function edit_helper(){
 		
 		$stops = DB::table($table)->where('route',$route)->get();
 		$query = "select * from ".$city.'_'.$trans."_route , ".$city.'_'.$trans."_stop where route = :var and ".$city.'_'.$trans."_route.stop_id = ".$city.'_'.$trans."_stop.stop_id ORDER BY ABS(stop_pos);";
-		$stops = DB::select( DB::raw($query), array('var' => $route,));
+		$stops = DB::select( DB::raw($query), array('var' => $route,)); //Getting the route data
 		return View::make('manual_upload')->with('datam',array($stops,$route));
 	}
 	else{
@@ -145,14 +153,15 @@ function edit_helper(){
 	
 }
 
-
+//Delete a route
 function del($table,$route){
 	DB::table($table)->where('route', '=', $route)->delete();
 }
 
+//Adds an edited/created route to the ' routes_edit_history' and ' routes_edit_history_help' table
 function update_history($city,$trans,$route,$inp,$username,$action,$count){
  
-	$quer = "select max(revision) as ver from routes_edit_history where route = :var1 and city = :var2 and trans = :var3"; 
+	$quer = "select max(revision) as ver from routes_edit_history where route = :var1 and city = :var2 and trans = :var3"; //Get the maximum revision number on the given route
   	$rev = DB::select( DB::raw($quer), array('var1' => $route,'var2' => $city,'var3' => $trans,));
   	$ver = $rev[0]->ver;
   	if($ver==null){
@@ -161,24 +170,24 @@ function update_history($city,$trans,$route,$inp,$username,$action,$count){
   	if($action!="edit"){
   		$action="add";
   	}
-  	$ver = $ver+1;
+  	$ver = $ver+1;//Increment the revision number
   	$quer = "INSERT INTO routes_edit_history(route, city, trans, revision, action, edited_by) values(:var1 ,:var2, :var3 ,:var4, :var5 ,:var6)"; 
-  	DB::insert( DB::raw($quer), array('var1' => $route,'var2' => $city,'var3' => $trans,'var4' => $ver,'var5' => $action,'var6' => $username,));
+  	DB::insert( DB::raw($quer), array('var1' => $route,'var2' => $city,'var3' => $trans,'var4' => $ver,'var5' => $action,'var6' => $username,));// Insert into the 'routes_edit_history' table
   	$quer = "select id  from routes_edit_history where route = :var1 and city = :var2 and trans = :var3 and revision = :var4"; 
   	$ids = DB::select( DB::raw($quer), array('var1' => $route,'var2' => $city,'var3' => $trans,'var4' => $ver));
-  	$id = $ids[0]->id;
+  	$id = $ids[0]->id;//Getting the id of the insert
   	for($i=0;$i<$count;$i++){
 		$t1 = $inp['stop_pos'.$i];
 		$t2 = $inp['stop_name'.$i];
 		$t3 = $inp['stop_lat'.$i];
 		$t4 = $inp['stop_lon'.$i];
 		$quer = "INSERT INTO routes_edit_history_help(ID,route,stop_pos, stop_name, stop_lat, stop_lon) values(:var1 ,:var2, :var3 ,:var4, :var5 ,:var6)"; 
-  		DB::insert( DB::raw($quer), array('var1' => $id,'var2' => $route,'var3' => $t1,'var4' => $t2,'var5' => $t3,'var6' => $t4,));
+  		DB::insert( DB::raw($quer), array('var1' => $id,'var2' => $route,'var3' => $t1,'var4' => $t2,'var5' => $t3,'var6' => $t4,)); //Insert the stops of the edited/created route in 'routes_edit_history_help'
 	}
 	//echo '<script>window.alert("Your edit has been recorded for verification!");</script>';  	
 }
 
-
+//Insert the route data into the corresponding table
 function edit_done(){
 	$inp = Input::all();
 	$proc = $inp['proc'];
@@ -199,10 +208,10 @@ function edit_done(){
 	$op = $inp['op'];
 	if($count>0){
 	if(Auth::user()->role!="2"){  //If not a user
-	if($op=="edit"){
-	   $this->del($table,$route);
+	if($op=="edit"){//If a route that exists is edited
+	   $this->del($table,$route); //Delete the route which would be replaced by the new edited route
 	}
-	if($op=="edit"){
+	if($op=="edit"){//If a route that exists is edited
 				$quer = "SELECT * FROM ".$city."_".$trans."_info WHERE route = :var"; 
   	        		$created = DB::select( DB::raw($quer), array('var' => $route,));
   	        		$created_by = $created[0]->created_by;
@@ -211,14 +220,14 @@ function edit_done(){
    				//DB::insert( DB::raw($quer), array('var1' => $route,'var2' => $created_by,'var3' => $username,));
    				$query = "SELECT * FROM ".$city."_".$trans."_info WHERE route = :var";
 				$routes = DB::select( DB::raw($query), array('var' => $route,));
-				$quer = "REPLACE INTO ".$city."_".$trans."_info(route,views,upvotes,downvotes,created_by,verified_by,edited_by) values(:var1,:var2,:var3,:var4,:var5,:var6,:var7)";
-				DB::insert( DB::raw($quer), array('var1' => $route,'var2' => $routes[0]->views+1,'var3' => $routes[0]->upvotes,'var4' => $routes[0]->downvotes,'var5' => $created_by,'var6' => $username,'var7' => $username,));
+				$quer = "REPLACE INTO ".$city."_".$trans."_info(route,views,upvotes,downvotes,created_by,verified_by,edited_by,verified_status) values(:var1,:var2,:var3,:var4,:var5,:var6,:var7,:var8)";//update the route info
+				DB::insert( DB::raw($quer), array('var1' => $route,'var2' => $routes[0]->views+1,'var3' => $routes[0]->upvotes,'var4' => $routes[0]->downvotes,'var5' => $created_by,'var6' => $username,'var7' => $username,'var8'=>1,));
    				
 			}
 	else{
 				//DB::statement("INSERT INTO ".$city."_".$trans."_info(route,created_by,edited_by) values('".$route."' ,'".$username."' ,'".$username."')");
-   				$quer = "REPLACE INTO ".$city."_".$trans."_info(route,views,upvotes,downvotes,created_by,verified_by,edited_by) values(:var1,:var2,:var3,:var4,:var5,:var6,:var7)";
-				DB::insert( DB::raw($quer), array('var1' => $route,'var2' => '0','var3' => '0','var4' => '0','var5' => $username,'var6' => $username,'var7' => $username,));
+   				$quer = "REPLACE INTO ".$city."_".$trans."_info(route,views,upvotes,downvotes,created_by,verified_by,edited_by,verified_status) values(:var1,:var2,:var3,:var4,:var5,:var6,:var7,:var8)";
+				DB::insert( DB::raw($quer), array('var1' => $route,'var2' => '0','var3' => '0','var4' => '0','var5' => $username,'var6' => $username,'var7' => $username,'var8'=>1,));//update the route info
    				/*
    				$query = "SELECT * FROM ".$city."_".$trans."_info WHERE route = :var";
 				$routes = DB::select( DB::raw($query), array('var' => $route,));
@@ -287,12 +296,14 @@ function edit_done(){
 	
 }
 
+
+//List the tranport corporations in a given city and pass them to the view
 function list_trans(){
 	$inp = Input::all();
 	$source = $inp['source'];
 	//$search_string = $inp['selec'];
 	$search_string = $inp['input_string'];
-	$sql = "SELECT transport_corp FROM cities WHERE name =  :var  ORDER BY name";
+	$sql = "SELECT transport_corp FROM cities WHERE name =  :var  ORDER BY name";//Get the tranport corporations
 	if($source=='selection'){
 		Session::put('city',$search_string);
 		Session::put('selec',"");
@@ -316,6 +327,7 @@ function list_trans(){
 	}
 }
 
+//Set the appropriate session variables
 function session_init(){
 	$inp = Input::all();
 	$name = $inp['selec'];
@@ -324,6 +336,8 @@ function session_init(){
 	Session::put('type',$type);
 	return $this->route_init();
 }
+
+//Retrieves the rote data and pass them to the view
 function route_init(){
 	Session::put('route',"");
 	Session::put('stops_route',"");
@@ -359,6 +373,8 @@ function route_init(){
 	
 	
 }
+
+//Set the appropritate sessio variables and pass route data
 function route_init1(){
 	Session::put('route',"");
 	Session::put('stops_route',"");
@@ -384,6 +400,8 @@ function route_init1(){
 	
 	
 }
+
+//Given a route display the data associated with that route
 function route_finder(){
 
 	$inp = Input::all();
@@ -394,8 +412,8 @@ function route_finder(){
 	$routes = DB::select( DB::raw($query), array('var' => $route,));
 	if(sizeof($routes)==1){
 	Session::put('route',$route);
-	$quer = "REPLACE INTO ".$city."_".$trans."_info(route,views,upvotes,downvotes,created_by,verified_by,edited_by) values(:var1,:var2,:var3,:var4,:var5,:var6,:var7)";
-	DB::insert( DB::raw($quer), array('var1' => $route,'var2' => $routes[0]->views+1,'var3' => $routes[0]->upvotes,'var4' => $routes[0]->downvotes,'var5' => $routes[0]->created_by,'var6' => $routes[0]->verified_by,'var7' => $routes[0]->edited_by,));
+	$quer = "REPLACE INTO ".$city."_".$trans."_info(route,views,upvotes,downvotes,created_by,verified_by,edited_by,verified_status) values(:var1,:var2,:var3,:var4,:var5,:var6,:var7,:var8)";
+	DB::insert( DB::raw($quer), array('var1' => $route,'var2' => $routes[0]->views+1,'var3' => $routes[0]->upvotes,'var4' => $routes[0]->downvotes,'var5' => $routes[0]->created_by,'var6' => $routes[0]->verified_by,'var7' => $routes[0]->edited_by,'var8' => $routes[0]->verified_status,));//Increment the view counter of route
 	
   	
   	//$query = "select * from ".$city.'_'.$trans."_data where route = :var  ORDER BY ABS(stop_pos);"; 
@@ -405,7 +423,7 @@ function route_finder(){
   	$query = "select * from ".$city.'_'.$trans."_route , ".$city.'_'.$trans."_stop where route = :var and ".$city.'_'.$trans."_route.stop_id = ".$city.'_'.$trans."_stop.stop_id ORDER BY ABS(stop_pos);"; 
 
   	$stops = DB::select( DB::raw($query), array('var' => $route,));	
-  	$routes_all = DB::table($city.'_'.$trans.'_route')->select('route')->distinct()->get();
+  	$routes_all = DB::table($city.'_'.$trans.'_route')->select('route')->distinct()->get(); //Get
   	$query = "select * from ".$city.'_'.$trans."_info where route = :var "; 
   	$info_all = DB::select( DB::raw($query), array('var' => $route,)); 
   	$data = array($stops, $routes_all, $route,$info_all);
@@ -644,7 +662,19 @@ function edit_curr_route(){
 }
 
 function download_app(){
-	$name = public_path().'/files/Travigator-debug.apk';
+	$name = public_path().'/files/app-debug.apk';
+	header('Content-Description: File Transfer');
+    	header('Content-Type: application/octet-stream');
+    	header('Content-Disposition: attachment; filename="'.basename($name).'"');
+    	header('Expires: 0');
+    	header('Cache-Control: must-revalidate');
+    	header('Pragma: public');
+    	header('Content-Length: ' . filesize($name));
+    	readfile($name);
+}
+
+function download_route_app(){
+	$name = public_path().'/files/RouteManager-debug.apk';
 	header('Content-Description: File Transfer');
     	header('Content-Type: application/octet-stream');
     	header('Content-Disposition: attachment; filename="'.basename($name).'"');

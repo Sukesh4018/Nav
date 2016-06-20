@@ -237,6 +237,7 @@ Route::post('list_trans', array('uses' =>'HeadController@list_trans'));
 Route::get('list_trans', array('uses' =>'HeadController@route_init'));
 Route::post('add_agen', array('before' => 'auth','uses' =>'HeadController@add_agency'));
 Route::get('download_app', array('uses' =>'HeadController@download_app'));
+Route::get('download_route_app', array('uses' =>'HeadController@download_route_app'));
 
 Route::post('upvote_route', array('uses' =>'AuxController@upvote_route'));
 Route::post('downvote_route', array('uses' =>'AuxController@downvote_route'));

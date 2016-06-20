@@ -76,7 +76,7 @@ echo  Form::close() ;
 	{{ Form::submit('Search',['class' =>'btn btn-success btn-block btn-lg  ']) }}
 {{ Form::close() }}
  {{ Form::open(array('url'=>'upload','method' => 'GET','class'=>'navbar-form navbar-left')) }}
-		{{ Form::submit('Add Data',['class' =>'btn btn-success btn-block btn-lg ']) }}
+		{{ Form::submit('Edit Info',['class' =>'btn btn-success btn-block btn-lg ']) }}
 {{ Form::close() }}
 
 </div>
@@ -85,8 +85,8 @@ echo  Form::close() ;
 
 <?php 
 if (Auth::check()){
-	echo  '<div class="dropdown" style ="float:right;margin-top:15px;margin-right:80px;"; >
-  <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">'
+	echo  '<div class="dropdown" style ="float:right;margin-top:15px;margin-right:80px;margin-left:10px;"; >
+  <button class="btn btn-warning dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">'
     .Session::get('user'). 
   '<span class="caret"></span>
   </button>
@@ -109,26 +109,50 @@ if (Auth::check()){
 else{
 
 	echo Form::open(array('url'=>'get_change','method' => 'GET','class'=>'navbar-form','style' => 'float:right;margin-top:15px;margin-right:80px;'));
-		echo Form::submit('Login',['class' =>'btn btn-default btn-block btn-md']);
+		echo Form::submit('Login',['class' =>'btn btn-warning btn-block btn-md']);
 	echo Form::close() ;
 }
   ?>
-    
-    
+<button  class="btn btn-default btn-md" data-toggle="modal" style = "float:right;margin-top:15px;margin-left:10px;" data-target="#about">Help</button>
+
+		 
+{{ Form::open(array('url'=>'download_app','method' => 'GET','class'=>'navbar-form navbar-right','style'=>'margin-top:15px')) }}
+		{{ Form::submit('User App',['class' =>'btn btn-default btn-block btn-md ']) }}
+{{ Form::close() }}
+
+{{ Form::open(array('url'=>'download_route_app','method' => 'GET','class'=>'navbar-form navbar-right','style'=>'margin-top:15px')) }}
+		{{ Form::submit('Volunteer App',['class' =>'btn btn-default btn-block btn-md ']) }}
+{{ Form::close() }}  
     
 <a class="navbar-brand" rel="home" href="get_search" title="Bus Route Portal" style="float:left;">
         <img style="max-width:80px; margin-top: -24px; "
             alt = "Bus Route Portal Logo"   src={{asset('img/Bus.png')}}>
               
-<a class="navbar-brand" rel="home" href="download_app" title="Download Android App" style="float:right;">
-        <img style="max-width:120px; margin-top: -5px; "
-            alt = "Download Android App Logo" src={{asset('img/downloadAppAndroid.png')}}>          
 </a>
 <p class="uppercase" style="font-size:24; float:left;margin-top: 10px !important;"><?php if(Session::get('editTrans')!=""){
 echo  Session::get('editCity').', '.Session::get('editTrans');
 }?></p>
 </nav>
 
+<!-- Modal -->
+<div id="about" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Help</h4>
+      </div>
+      <div class="modal-body">
+        <p style="text-transform: none;">This portal provides data regarding various routes and stops in a given city. You need to select a given a city and a tranport corporation in the city. Upon entering a route, you can access the data for that particular route by clicking the "info" tab. You can also edit the data present by using the "add data" tab(only for registered users). By using "Change City" tab you can change the current selected city and transport corporation.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 
 

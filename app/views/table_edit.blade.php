@@ -19,7 +19,6 @@
 p.uppercase {
     text-transform: uppercase;
 }
-.selected{background-color: red !important; z-index:9999}
 </style>
  @include('up')
 
@@ -70,7 +69,7 @@ p.uppercase {
 	$route = $datam[1];
 	echo '<h2><nobr><u>Route : '.$route.'</u></h2></nobr>';
 	echo  '<button id = "add" style="display: inline;float:right;" class="btn btn-primary btn-md">Add Stop</button>';
-	echo  '<button id = "del" style="display: inline;float:right;margin-right: 10px ;" class="btn btn-primary btn-md">Delete Stop</button>';	
+	echo  '<button id = "del" style="display: inline;float:right;" class="btn btn-primary btn-md">Delete Stop</button>';	
 	echo Form::open(array('url'=>'edit_done','method' => 'POST')) ;
 	echo '<br><table id = "form"   border="1" style="width:100%; font-size:18px; "><thead><tr><td>&nbspPosition&nbsp&nbsp</td><td>&nbspName &nbsp&nbsp  </td><td>&nbspLatitude  &nbsp&nbsp </td><td>&nbspLongitude</td></td></tr><thead>';
 	
@@ -140,7 +139,22 @@ p.uppercase {
     		});
     	}
     	
-
+/*
+$(document).ready(function() {
+    $('#form').DataTable( {
+        columnDefs: [ {
+            orderable: true,
+            className: 'select-checkbox',
+            targets:   0
+        } ],
+        select: {
+            style:    'os',
+            selector: 'td:first-child'
+        },
+        order: [[ 1, 'asc' ]]
+    } );
+} );
+*/
 var count =  <?php echo json_encode($i); ?>;
 $(document).ready(function() {
     var t = $('#form').DataTable( {
@@ -167,7 +181,7 @@ $(document).ready(function() {
         ] ).draw( false );
         count++;
         document.getElementById('count').value = count; 
-        //alert(count);
+        alert(count);
     } );
  
     // Automatically add a first row of data
@@ -185,6 +199,7 @@ $(document).ready(function() {
  
     $('#del').click( function () {
         t.row('.selected').remove().draw( false );
+        alert(t.row('.selected').data());
         count--;
         document.getElementById('count').value = count; 
         alert(count);

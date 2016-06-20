@@ -21,6 +21,7 @@ if(is_array($data)){
     		$routes_data[$i] = $route->route;
    		 $i = $i+1;
   	}
+  	$data_of_route = DB::table($city.'_'.$trans.'_info')->where('route','=',$current_route)->get();
   	
   }
 ?>
@@ -65,15 +66,25 @@ if(is_array($data)){
 
 <p style="font-size:24px;display: inline; margin-left:100px;float:left;"><nobr>
 <?php 
-if(is_array($data)){if(sizeof($data)==4){Session::put('route',$data[2]);
-echo '<a style="color: #000000;"data-toggle="modal" data-target="#route_modal" href="#">Route:  " '.$data[2].'"</a>';
-$info = $data[3];
-echo '&nbsp&nbsp<div style="display: inline;"><p style="display: inline; color:green;font-size:20px;">Feedback: &nbsp</p><button id = "upvote" type="button" class="btn btn-default btn-sm style="display: inline;"  " >Correct</button> &nbsp<p id = "upvote_text" style="display: inline;">'.$info[0]->upvotes." </p>&nbsp&nbsp";
-echo '<button id = "downvote" type="button" class="btn btn-primary btn-sm " >Incorrect</button>&nbsp <p id = "downvote_text" style="display: inline;">'.$info[0]->downvotes."</p> </div>";
-}
+if(is_array($data)){
+if(sizeof($data)==4){
+Session::put('route',$data[2]); 
+echo '<a style="color: #000000;"data-toggle="modal" data-target="#route_modal" href="#">Route:  " '.$data[2].'"</a></nobr></p>';
+if(isset($current_route)){
+      		if(sizeof($data_of_route)>0){
+      			if($data_of_route[0]->verified_status == 0){
+      				echo '<p style="color:red;"> Unverfied</p>';
+      			}
+      			else{
+      				echo '<p style="color:green;"> Verified</p>';
+      			}
+      		}
+      	}
+ } 
 } 
 ?>
-</nobr></p>
+
+
 </div>
 
 <!-- Modal -->
@@ -135,10 +146,12 @@ echo '<button id = "downvote" type="button" class="btn btn-primary btn-sm " >Inc
       <div class="modal-body" >
       <?php
       if(isset($current_route)){
-      		$data_of_route = DB::table($city.'_'.$trans.'_info')->where('route','=',$current_route)->get();
+      		//$data_of_route = DB::table($city.'_'.$trans.'_info')->where('route','=',$current_route)->get();
       		if(sizeof($data_of_route)>0){
       			echo '<div>';
 			echo "Total Views : ".$data_of_route[0]->views.'</br>';
+			echo "Upvotes : ".$data_of_route[0]->upvotes.'</br>';
+			echo "Downvotes : ".$data_of_route[0]->downvotes.'</br>';
 			echo "Created by : ".$data_of_route[0]->created_by.'</br>';
 			echo "Edited by : ".$data_of_route[0]->edited_by.'</br>';
 			echo "Verified by : ".$data_of_route[0]->verified_by.'</br>';
@@ -155,6 +168,36 @@ echo '<button id = "downvote" type="button" class="btn btn-primary btn-sm " >Inc
   </div>
 </div>
 
+<!-- Modal -->
+<div id="feedback" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title" style=" color:green;">Please provide the Feedback</h4>
+      </div>
+      <div class="modal-body">
+     
+      <p style="font-size:16px;display: inline; margin-left:100px;float:left;"><nobr>
+<?php 
+if(is_array($data)){if(sizeof($data)==4){Session::put('route',$data[2]);
+$info = $data[3];
+echo ' Does the route dispaly the correct data?<br><br><br>&nbsp&nbsp<div style="display: inline;"><button id = "upvote" class="upvotebuttonclick btn btn-primary btn-md " type="button" style="display: inline;"  " >Correct</button> &nbsp<p id = "upvote_text" style="display: inline;">'.$info[0]->upvotes." </p>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp";
+echo '<button id = "downvote" class="downvotebuttonclick btn btn-danger btn-md "type="button" >Incorrect</button>&nbsp <p id = "downvote_text" style="display: inline; ">'.$info[0]->downvotes."</p> </div>";
+}
+} 
+?>
+</nobr></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+
+  </div>
+</div>
 
 <div id="nav" class="btn-group">
 	<button id = "stops" type="button" class="btn btn-primary btn-lg btn-block" >Stops</button><br><br>
@@ -180,6 +223,8 @@ echo '<button id = "downvote" type="button" class="btn btn-primary btn-sm " >Inc
 	echo '<label for="edit_this_route_button" class="hidden">Edit the current route</label>';
 	}
 	?>
+	<button id = "feedback_button" type="button" class="btn btn-primary btn-lg btn-block" data-toggle="modal" data-target="#feedback">Feedback</button><br><br>
+	<label for="feedback_button" class="hidden">Click to Give the Feedback for the current route</label>
 </div>
 
 <div class="container-fluid" align="left" style="width:899px; height:540px;">
@@ -302,7 +347,8 @@ function tableText(tableCell) {
 }
   
 
-$('#upvote').on('click', function (e) {
+//$('#upvote').on('click', function (e) {
+$(document).on('click','.upvotebuttonclick',function() {
 var val_text = document.getElementById("upvote_text").innerHTML;
 var val =  parseInt(val_text);
 document.getElementById("upvote_text").innerHTML = val+1;
@@ -323,8 +369,9 @@ request = $.ajax({
         }
     });
    });
-   
-$('#downvote').on('click', function (e) {
+
+//$('#downvote').on('click', function (e) {
+$(document).on('click','.downvotebuttonclick',function() {
 var val_text = document.getElementById("downvote_text").innerHTML;
 var val =  parseInt(val_text);
 document.getElementById("downvote_text").innerHTML = val+1;
