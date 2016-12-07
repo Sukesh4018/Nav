@@ -69,15 +69,14 @@ function add_agency(){
 	//DB::statement($create);
 	
 	//Create the necessary tables
-	$create  = "create table ".$city.'_'.$trans."_stop(stop_id INT, stop_name varchar(500), stop_lat varchar(500), stop_lon varchar(500))";
+	$create  = "create table ".$city.'_'.$trans."_stop (stop_id INT, stop_name varchar(500), stop_lat varchar(500), stop_lon varchar(500))";
 	DB::statement($create);
+	$stops = "ALTER TABLE ".$city.'_'.$trans."_stop ADD PRIMARY KEY (stop_id,stop_name) ";
+	// DB::statement($stops);
 	$create  = "create table ".$city.'_'.$trans."_route(route varchar(500), stop_id INT, stop_pos varchar(500))";
 	DB::statement($create);
 	$create  = "create table ".$city.'_'.$trans."_info(route varchar(500),upvotes INT default 0, downvotes INT default 0 , views INT default 0, created_by varchar(500) default 'admin',verified_by varchar(500) default 'admin',edited_by varchar(500) default 'admin' ,PRIMARY KEY(route)) ";
-	DB::statement($create);
-	$stops = "ALTER TABLE ".$city.'_'.$trans."_stop
-	ADD PRIMARY KEY (stop_id,stop_name)";
-	DB::statement($stops);
+	// DB::statement($create);
 	
 	Session::put('editCity',$city);
 	Session::put('editTrans',$trans);

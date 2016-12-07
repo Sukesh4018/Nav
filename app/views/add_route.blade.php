@@ -26,7 +26,7 @@ p.uppercase {
   	if(Auth::user()->role!="2"){
   	echo '
   	<a href="upload" class="btn btn-primary btn-lg btn-block" role="button"> GTFS Zip</a>
-  	<a href="add_agen" class="btn btn-primary btn-lg btn-block" role="button">Add Agency</a>
+  	<a href="add_agen" class="btn btn -primary btn-lg btn-block" role="button">Add Agency</a>
   	<a href="upload_file" class="btn btn-primary btn-lg btn-block" role="button">Upload File</a>
   	<a href="delete_route" class="btn btn-primary btn-lg btn-block" role="button">Delete Route</a>
   	';

@@ -253,4 +253,10 @@ Route::get('edit_stop',function(){
 	return "To be Updated";
 });
 
+Route::group(array('prefix' => 'app/'), function() {
+        Route::get('get_cities', 'BaseController@getCities');
+        Route::get('get_routes/{city}', 'BaseController@getRoutes');
+        Route::get('get_stops/{city}', 'BaseController@getStops');
+        Route::post('add_new_city','BaseController@addNewCity');
+});
 
